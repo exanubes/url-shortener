@@ -7,3 +7,11 @@ type PersistenceProvider interface {
 	Get(ctx context.Context, id int) GetUrlOutput
 	GenerateID(ctx context.Context) GenerateIDOutput
 }
+
+type Encoder interface {
+	Encode(input int) string
+}
+
+type Decoder interface {
+	Decode(input string) int
+}
