@@ -8,10 +8,7 @@ type PersistenceProvider interface {
 	GenerateID(ctx context.Context) GenerateIDOutput
 }
 
-type Encoder interface {
+type Codec interface {
 	Encode(input uint64) string
-}
-
-type Decoder interface {
 	Decode(input string) (uint64, error)
 }

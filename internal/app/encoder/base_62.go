@@ -1,12 +1,19 @@
 package encoder
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"slices"
+
+	"github.com/exanubes/url-shortener/internal/domain"
 )
 
-type Base62Encoding struct{}
+type Base62Codec struct{}
+
+var (
+	InvalidInputErr   = errors.New("Invalid input")
+	NumberOverflowErr = errors.New("Max safe number exceeded")
+)
 
 var characters_list = []rune{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 
@@ -20,7 +27,13 @@ var characters_map = map[rune]uint64{
 	'U': 56, 'V': 57, 'W': 58, 'X': 59, 'Y': 60, 'Z': 61,
 }
 
-func (_ Base62Encoding) Encode(input uint64) string {
+var _ domain.Codec = (*Base62Codec)(nil)
+
+func New() Base62Codec {
+	return Base62Codec{}
+}
+
+func (_ Base62Codec) Encode(input uint64) string {
 	if input == 0 {
 		return "0"
 	}
@@ -36,18 +49,18 @@ func (_ Base62Encoding) Encode(input uint64) string {
 	return string(digits)
 }
 
-func (_ Base62Encoding) Decode(input string) (uint64, error) {
+func (_ Base62Codec) Decode(input string) (uint64, error) {
 	var result uint64 = 0
 
 	for _, digit := range input {
 		value, ok := characters_map[digit]
 
 		if !ok {
-			return 0, fmt.Errorf("Invalid input")
+			return 0, InvalidInputErr
 		}
 
 		if check_number_overflow(result, value) {
-			return 0, fmt.Errorf("Max safe number exceeded")
+			return 0, NumberOverflowErr
 		}
 
 		result = result*uint64(62) + value
