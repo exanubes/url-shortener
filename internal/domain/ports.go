@@ -9,9 +9,9 @@ type PersistenceProvider interface {
 }
 
 type Encoder interface {
-	Encode(input int) string
+	Encode(input uint64) string
 }
 
 type Decoder interface {
-	Decode(input string) int
+	Decode(input string) (uint64, error)
 }
