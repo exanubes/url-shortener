@@ -20,7 +20,9 @@ func (_ *HttpDriver) Run() error {
 	provider := inmemory.NewInmemoryRepository()
 	codec := encoder.New()
 	create_short_url_use_case := usecase.NewCreateShortUrl(provider, codec)
+	visit_url_use_case := usecase.NewVisitShortUrl(provider, codec)
 	mux.Handle("POST /", routes.NewCreateUrlRoute(create_short_url_use_case))
+	mux.Handle("GET /{short_url}", routes.NewVisitUrlRoute(visit_url_use_case))
 
 	return http.ListenAndServe(":8000", mux)
 }
