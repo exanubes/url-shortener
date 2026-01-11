@@ -12,3 +12,10 @@ type Codec interface {
 	Encode(input uint64) string
 	Decode(input string) (uint64, error)
 }
+
+type ForCreatingUrls interface {
+	Execute(url string) (string, error)
+}
+type ForVisitingUrls interface {
+	Execute(short_url string) (string, error)
+}

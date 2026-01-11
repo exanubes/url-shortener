@@ -1,5 +1,15 @@
 package main
 
+import (
+	"log"
+
+	"github.com/exanubes/url-shortener/internal/drivers"
+)
+
 func main() {
-	println("Hello world")
+	driver := drivers.NewHttpDriver()
+
+	if err := driver.Run(); err != nil {
+		log.Fatal()
+	}
 }
