@@ -15,6 +15,7 @@ type Repository struct {
 func NewInmemoryRepository() *Repository {
 	return &Repository{
 		id_counter: 11_157,
+		cache:      make(map[int]domain.Url),
 	}
 }
 
