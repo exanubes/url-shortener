@@ -8,14 +8,14 @@ import (
 )
 
 type Repository struct {
-	id_counter int
-	cache      map[int]domain.Url
+	id_counter uint64
+	cache      map[uint64]domain.Url
 }
 
 func NewInmemoryRepository() *Repository {
 	return &Repository{
 		id_counter: 11_157,
-		cache:      make(map[int]domain.Url),
+		cache:      make(map[uint64]domain.Url),
 	}
 }
 
@@ -24,7 +24,7 @@ func (repository *Repository) Save(ctx context.Context, input domain.Url) error 
 	return nil
 }
 
-func (repository *Repository) Get(ctx context.Context, id int) domain.GetUrlOutput {
+func (repository *Repository) Get(ctx context.Context, id uint64) domain.GetUrlOutput {
 	url, exists := repository.cache[id]
 	if !exists {
 		return domain.GetUrlOutput{

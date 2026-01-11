@@ -4,7 +4,7 @@ import "context"
 
 type PersistenceProvider interface {
 	Save(ctx context.Context, input Url) error
-	Get(ctx context.Context, id int) GetUrlOutput
+	Get(ctx context.Context, id uint64) GetUrlOutput
 	GenerateID(ctx context.Context) GenerateIDOutput
 }
 

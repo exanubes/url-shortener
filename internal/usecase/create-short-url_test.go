@@ -25,7 +25,7 @@ func TestCreateShortUrl(t *testing.T) {
 	}
 
 	id, _ := codec.Decode(result)
-	res := provider.Get(context.TODO(), int(id))
+	res := provider.Get(context.TODO(), id)
 
 	if uint64(res.Data.ID) != id {
 		t.Fatalf("Expected: %d, received: %d", id, res.Data.ID)

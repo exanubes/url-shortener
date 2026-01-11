@@ -1,7 +1,7 @@
 package domain
 
 type Url struct {
-	ID    int
+	ID    uint64
 	Short string
 	Long  string
 }

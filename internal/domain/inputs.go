@@ -6,6 +6,6 @@ type GetUrlOutput struct {
 }
 
 type GenerateIDOutput struct {
-	Data int
+	Data uint64
 	Err  error
 }

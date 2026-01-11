@@ -11,14 +11,14 @@ type CreateShortUrl struct {
 	codec       domain.Codec
 }
 
-func NewCreateShortUrl(provider domain.PersistenceProvider, codec domain.Codec) CreateShortUrl {
-	return CreateShortUrl{
+func NewCreateShortUrl(provider domain.PersistenceProvider, codec domain.Codec) *CreateShortUrl {
+	return &CreateShortUrl{
 		persistence: provider,
 		codec:       codec,
 	}
 }
 
-func (usecase CreateShortUrl) Execute(url string) (string, error) {
+func (usecase *CreateShortUrl) Execute(url string) (string, error) {
 	ctx := context.Background()
 
 	result := usecase.persistence.GenerateID(ctx)
