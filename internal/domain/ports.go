@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 )
 
 type PersistenceProvider interface {
@@ -16,13 +15,13 @@ type Codec interface {
 	Decode(input string) (uint64, error)
 }
 
+type TokenSpaceGenerator interface {
+	Generate() (Token, error)
+}
+
 type ForCreatingUrls interface {
 	Execute(url string) (string, error)
 }
 type ForVisitingUrls interface {
 	Execute(short_url string) (string, error)
 }
-
-var (
-	UrlNotFound = errors.New("Url not found")
-)
