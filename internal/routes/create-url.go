@@ -33,7 +33,7 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 	result, err := route.usecase.Execute(payload.Url)
 
 	if err != nil {
-		response.WriteHeader(500)
+		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

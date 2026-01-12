@@ -22,7 +22,12 @@ func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *htt
 	result, err := route.usecase.Execute(short_url)
 
 	if err != nil {
-		response.WriteHeader(500)
+		if err == domain.UrlNotFound {
+			http.Error(response, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 type PersistenceProvider interface {
 	Save(ctx context.Context, input Url) error
@@ -19,3 +22,7 @@ type ForCreatingUrls interface {
 type ForVisitingUrls interface {
 	Execute(short_url string) (string, error)
 }
+
+var (
+	UrlNotFound = errors.New("Url not found")
+)

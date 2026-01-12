@@ -2,7 +2,6 @@ package inmemory
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
@@ -28,7 +27,7 @@ func (repository *Repository) Get(ctx context.Context, id uint64) domain.GetUrlO
 	url, exists := repository.cache[id]
 	if !exists {
 		return domain.GetUrlOutput{
-			Err: fmt.Errorf("Url does not exist"),
+			Err: domain.UrlNotFound,
 		}
 	}
 	return domain.GetUrlOutput{
