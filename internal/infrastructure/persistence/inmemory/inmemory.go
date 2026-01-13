@@ -17,6 +17,10 @@ func NewInmemoryRepository() *Repository {
 }
 
 func (repository *Repository) Save(ctx context.Context, input domain.Url) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if _, exists := repository.cache[input.Short]; exists {
 		return domain.ErrShortCodeCollision
 	}
@@ -26,6 +30,10 @@ func (repository *Repository) Save(ctx context.Context, input domain.Url) error 
 }
 
 func (repository *Repository) Get(ctx context.Context, input string) (domain.Url, error) {
+	if err := ctx.Err(); err != nil {
+		return domain.Url{}, err
+	}
+
 	url, exists := repository.cache[input]
 
 	if !exists {

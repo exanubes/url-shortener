@@ -19,6 +19,7 @@ type HttpConfig struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
+	RequestTimeout  time.Duration
 }
 
 var DefaultHttpConfig = HttpConfig{
@@ -26,7 +27,8 @@ var DefaultHttpConfig = HttpConfig{
 	ReadTimeout:     5 * time.Second,
 	WriteTimeout:    5 * time.Second,
 	IdleTimeout:     60 * time.Second,
-	ShutdownTimeout: 5 * time.Second,
+	ShutdownTimeout: 30 * time.Second,
+	RequestTimeout:  5 * time.Second,
 }
 
 type HttpDriver struct {
@@ -48,7 +50,7 @@ func (driver *HttpDriver) Run(ctx context.Context, config HttpConfig) error {
 
 	server := &http.Server{
 		Addr:         config.Port,
-		Handler:      driver.setup_routes(),
+		Handler:      driver.setup_routes(config.RequestTimeout),
 		ReadTimeout:  config.ReadTimeout,
 		WriteTimeout: config.WriteTimeout,
 		IdleTimeout:  config.IdleTimeout,
@@ -78,16 +80,16 @@ func (driver *HttpDriver) Run(ctx context.Context, config HttpConfig) error {
 	defer cancel()
 
 	if err := server.Shutdown(shutdown_ctx); err != nil {
-		return fmt.Errorf("Failed to shut down the server: %w", err)
+		return fmt.Errorf("Failed to shut down the server: %w\n", err)
 	}
 
-	fmt.Println("Server shutdown gracefully")
+	fmt.Println("Server exited gracefully")
 	return nil
 }
 
-func (driver *HttpDriver) setup_routes() http.Handler {
+func (driver *HttpDriver) setup_routes(request_timeout time.Duration) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("POST /", routes.NewCreateUrlRoute(driver.create_url))
-	mux.Handle("GET /{short_url}", routes.NewVisitUrlRoute(driver.visit_url))
+	mux.Handle("POST /", routes.NewCreateUrlRoute(request_timeout, driver.create_url))
+	mux.Handle("GET /{short_url}", routes.NewVisitUrlRoute(request_timeout, driver.visit_url))
 	return mux
 }

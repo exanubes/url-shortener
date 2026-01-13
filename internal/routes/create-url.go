@@ -4,22 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type CreateUrlRoute struct {
-	usecase domain.ForCreatingUrls
+	usecase         domain.ForCreatingUrls
+	request_timeout time.Duration
 }
 
-func NewCreateUrlRoute(usecase domain.ForCreatingUrls) *CreateUrlRoute {
-	return &CreateUrlRoute{
-		usecase,
-	}
+func NewCreateUrlRoute(request_timeout time.Duration, usecase domain.ForCreatingUrls) *CreateUrlRoute {
+	return &CreateUrlRoute{usecase, request_timeout}
 }
 
 func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(request.Context(), route.request_timeout)
+	defer cancel()
 	var payload PostRequestBody
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		http.Error(response, "invalid payload", http.StatusBadRequest)
