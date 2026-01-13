@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/exanubes/url-shortener/internal/app/policy"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
@@ -33,7 +34,7 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 		return
 	}
 
-	result, err := route.usecase.Execute(ctx, payload.Url)
+	result, err := route.usecase.Execute(ctx, payload.Url, policy.NewRetryPolicy(3))
 
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)

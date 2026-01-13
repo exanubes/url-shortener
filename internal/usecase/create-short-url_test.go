@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/exanubes/url-shortener/internal/app/policy"
 	"github.com/exanubes/url-shortener/internal/domain"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/inmemory"
 )
@@ -21,7 +22,7 @@ func TestCreateShortUrl(t *testing.T) {
 
 	expected := "00002TY"
 	long_url := "https://exanubes.com"
-	result, err := usecase.Execute(context.TODO(), long_url)
+	result, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
 
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err.Error())
@@ -61,7 +62,7 @@ func TestRetryFlow(t *testing.T) {
 	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{})
 	expected := 3
 	long_url := "https://exanubes.com"
-	_, err := usecase.Execute(context.TODO(), long_url)
+	_, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
 
 	if provider.called_counter != expected {
 		t.Fatalf("Expected %d retries, received %d", expected, provider.called_counter)

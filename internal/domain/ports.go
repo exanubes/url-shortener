@@ -2,6 +2,8 @@ package domain
 
 import (
 	"context"
+
+	"github.com/exanubes/url-shortener/internal/app/policy"
 )
 
 type PersistenceProvider interface {
@@ -18,7 +20,7 @@ type TokenSpaceGenerator interface {
 }
 
 type ForCreatingUrls interface {
-	Execute(ctx context.Context, url string) (string, error)
+	Execute(ctx context.Context, url string, policy policy.RetryPolicy) (string, error)
 }
 
 type ForVisitingUrls interface {

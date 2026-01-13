@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/exanubes/url-shortener/internal/app/policy"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
@@ -19,10 +20,8 @@ func NewCreateShortUrl(provider domain.PersistenceProvider, short_code_generator
 	}
 }
 
-func (usecase *CreateShortUrl) Execute(ctx context.Context, url string) (string, error) {
-	// TODO: Replace with retry policy
-	retries := 0
-	for retries < 3 {
+func (usecase *CreateShortUrl) Execute(ctx context.Context, url string, retry policy.RetryPolicy) (string, error) {
+	for retry.Next() {
 		short_code, err := usecase.short_code_generator.Generate()
 		if err != nil {
 			return "", err
@@ -35,7 +34,6 @@ func (usecase *CreateShortUrl) Execute(ctx context.Context, url string) (string,
 			if !errors.Is(err, domain.ErrShortCodeCollision) {
 				return "", err
 			}
-			retries += 1
 		} else {
 			return short_code.String(), nil
 		}
