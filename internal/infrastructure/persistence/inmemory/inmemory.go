@@ -7,37 +7,30 @@ import (
 )
 
 type Repository struct {
-	id_counter uint64
-	cache      map[uint64]domain.Url
+	cache map[string]domain.Url
 }
 
 func NewInmemoryRepository() *Repository {
 	return &Repository{
-		id_counter: 11_157,
-		cache:      make(map[uint64]domain.Url),
+		cache: make(map[string]domain.Url),
 	}
 }
 
 func (repository *Repository) Save(ctx context.Context, input domain.Url) error {
-	repository.cache[input.ID] = input
+	if _, exists := repository.cache[input.Short]; exists {
+		return domain.ErrShortCodeCollision
+	}
+
+	repository.cache[input.Short] = input
 	return nil
 }
 
-func (repository *Repository) Get(ctx context.Context, id uint64) domain.GetUrlOutput {
-	url, exists := repository.cache[id]
-	if !exists {
-		return domain.GetUrlOutput{
-			Err: domain.UrlNotFound,
-		}
-	}
-	return domain.GetUrlOutput{
-		Data: url,
-	}
-}
+func (repository *Repository) Get(ctx context.Context, input string) (domain.Url, error) {
+	url, exists := repository.cache[input]
 
-func (repository *Repository) GenerateID(ctx context.Context) domain.GenerateIDOutput {
-	repository.id_counter += 1
-	return domain.GenerateIDOutput{
-		Data: repository.id_counter,
+	if !exists {
+		return domain.Url{}, domain.ErrUrlNotFound
 	}
+
+	return url, nil
 }

@@ -2,40 +2,44 @@ package usecase
 
 import (
 	"context"
+	"errors"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type CreateShortUrl struct {
-	persistence domain.PersistenceProvider
-	codec       domain.Codec
+	persistence          domain.PersistenceProvider
+	short_code_generator domain.ShortCodeGenerator
 }
 
-func NewCreateShortUrl(provider domain.PersistenceProvider, codec domain.Codec) *CreateShortUrl {
+func NewCreateShortUrl(provider domain.PersistenceProvider, short_code_generator domain.ShortCodeGenerator) *CreateShortUrl {
 	return &CreateShortUrl{
-		persistence: provider,
-		codec:       codec,
+		persistence:          provider,
+		short_code_generator: short_code_generator,
 	}
 }
 
-func (usecase *CreateShortUrl) Execute(url string) (string, error) {
-	ctx := context.Background()
+func (usecase *CreateShortUrl) Execute(ctx context.Context, url string) (string, error) {
+	// TODO: Replace with retry policy
+	retries := 0
+	for retries < 3 {
+		short_code, err := usecase.short_code_generator.Generate()
+		if err != nil {
+			return "", err
+		}
 
-	result := usecase.persistence.GenerateID(ctx)
-
-	if result.Err != nil {
-		return "", result.Err
+		if err := usecase.persistence.Save(ctx, domain.Url{
+			Long:  url,
+			Short: short_code.String(),
+		}); err != nil {
+			if !errors.Is(err, domain.ErrShortCodeCollision) {
+				return "", err
+			}
+			retries += 1
+		} else {
+			return short_code.String(), nil
+		}
 	}
 
-	short_url := usecase.codec.Encode(uint64(result.Data))
-
-	if err := usecase.persistence.Save(ctx, domain.Url{
-		ID:    result.Data,
-		Long:  url,
-		Short: short_url,
-	}); err != nil {
-		return "", err
-	}
-
-	return short_url, nil
+	return "", errors.New("Failed to generate short code")
 }

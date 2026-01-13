@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/exanubes/url-shortener/internal/domain"
-	"github.com/exanubes/url-shortener/internal/helpers"
 )
 
 var characters_list = []rune{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
@@ -18,7 +17,6 @@ func New() Base62Encoder {
 
 func (Base62Encoder) Encode(token domain.Token) string {
 	val := token.Value()
-	size := token.Size()
 
 	if val.Cmp(big.NewInt(0)) == 0 {
 		return "0"
@@ -36,5 +34,5 @@ func (Base62Encoder) Encode(token domain.Token) string {
 
 	slices.Reverse(digits)
 
-	return string(helpers.PadStart(digits, int(size), '0'))
+	return string(digits)
 }

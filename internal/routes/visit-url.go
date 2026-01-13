@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/exanubes/url-shortener/internal/domain"
@@ -17,12 +18,12 @@ func NewVisitUrlRoute(usecase domain.ForVisitingUrls) *VisitUrlRoute {
 }
 
 func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	ctx := context.Background()
 	short_url := request.PathValue("short_url")
-
-	result, err := route.usecase.Execute(short_url)
+	result, err := route.usecase.Execute(ctx, short_url)
 
 	if err != nil {
-		if err == domain.UrlNotFound {
+		if err == domain.ErrUrlNotFound {
 			http.Error(response, err.Error(), http.StatusNotFound)
 			return
 		}

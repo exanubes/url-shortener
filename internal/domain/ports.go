@@ -6,13 +6,11 @@ import (
 
 type PersistenceProvider interface {
 	Save(ctx context.Context, input Url) error
-	Get(ctx context.Context, id uint64) GetUrlOutput
-	GenerateID(ctx context.Context) GenerateIDOutput
+	Get(ctx context.Context, input string) (Url, error)
 }
 
-type Codec interface {
-	Encode(input uint64) string
-	Decode(input string) (uint64, error)
+type Encoder interface {
+	Encode(Token) string
 }
 
 type TokenSpaceGenerator interface {
@@ -20,8 +18,13 @@ type TokenSpaceGenerator interface {
 }
 
 type ForCreatingUrls interface {
-	Execute(url string) (string, error)
+	Execute(ctx context.Context, url string) (string, error)
 }
+
 type ForVisitingUrls interface {
-	Execute(short_url string) (string, error)
+	Execute(ctx context.Context, short_url string) (string, error)
+}
+
+type ShortCodeGenerator interface {
+	Generate() (ShortCode, error)
 }

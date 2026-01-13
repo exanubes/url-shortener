@@ -1,13 +1,15 @@
 package helpers
 
-func PadStart(input []rune, target_length int, padding rune) []rune {
+import (
+	"fmt"
+	"strings"
+)
+
+func PadStart(input string, target_length int, padding string) string {
 	length := len(input)
 	if length < target_length {
-		var pad []rune
-		for i := length; i < target_length; i += 1 {
-			pad = append(pad, padding)
-		}
-		return append(pad, input...)
+		pad := strings.Repeat(padding, target_length-length)
+		return fmt.Sprintf("%s%s", pad, input)
 	}
 
 	return input

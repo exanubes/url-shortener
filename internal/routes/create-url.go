@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -18,6 +19,7 @@ func NewCreateUrlRoute(usecase domain.ForCreatingUrls) *CreateUrlRoute {
 }
 
 func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	ctx := context.Background()
 	var payload PostRequestBody
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		http.Error(response, "invalid payload", http.StatusBadRequest)
@@ -30,7 +32,7 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 		return
 	}
 
-	result, err := route.usecase.Execute(payload.Url)
+	result, err := route.usecase.Execute(ctx, payload.Url)
 
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)

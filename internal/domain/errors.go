@@ -3,6 +3,10 @@ package domain
 import "errors"
 
 var (
-	ErrInvalidToken = errors.New("Invalid token")
-	UrlNotFound     = errors.New("Url not found")
+	ErrInvalidToken       = errors.New("Invalid token")
+	ErrUrlNotFound        = errors.New("Url not found")
+	ErrShortCodeCollision = errors.New("Shortcode already exists")
+	ErrInvalidShortCode   = errors.New("Invalid short code")
+	ErrExceededMaxSize    = errors.New("Exceeded maximum size")
+	ErrShortCodeEmpty     = errors.New("Empty short code")
 )

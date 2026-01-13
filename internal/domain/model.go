@@ -1,11 +1,43 @@
 package domain
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/exanubes/url-shortener/internal/helpers"
+)
 
 type Url struct {
-	ID    uint64
 	Short string
 	Long  string
+}
+
+type ShortCode struct {
+	size  int
+	value string
+	zero  string
+}
+
+func NewShortCode(value string, size int, zero_char string) (ShortCode, error) {
+	if size <= MIN_SHORT_CODE_SIZE {
+		return ShortCode{}, ErrShortCodeEmpty
+	}
+
+	if size > MAX_SHORT_CODE_SIZE {
+		return ShortCode{}, ErrExceededMaxSize
+	}
+
+	if len(value) > int(size) {
+		return ShortCode{}, ErrInvalidShortCode
+	}
+	return ShortCode{
+		value: value,
+		size:  size,
+		zero:  zero_char,
+	}, nil
+}
+
+func (code ShortCode) String() string {
+	return helpers.PadStart(code.value, code.size, code.zero)
 }
 
 type Token struct {
