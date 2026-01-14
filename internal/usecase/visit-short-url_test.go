@@ -15,7 +15,7 @@ func TestVisitShortUrl(t *testing.T) {
 	provider.Save(context.TODO(), long_url, short_code)
 
 	usecase := NewVisitShortUrl(provider)
-	result, _ := usecase.Execute(context.TODO(), short_code.String())
+	result, _ := usecase.Execute(context.TODO(), short_code)
 
 	if result.String() != long_url.String() {
 		t.Fatalf("Expected: %s, received: %s", long_url.String(), result.String())

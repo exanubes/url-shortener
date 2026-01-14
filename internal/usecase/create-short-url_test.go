@@ -18,11 +18,11 @@ func (mock_shortcode_factory) Generate() (domain.ShortCode, error) {
 func TestCreateShortUrl(t *testing.T) {
 	provider := inmemory.NewInmemoryRepository()
 
-	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{})
+	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{}, policy.NewRetryPolicyFactory(3))
 
 	expected, _ := domain.NewShortCode("2TY", 7, "0")
 	long_url, _ := domain.NewUrl("https://exanubes.com")
-	result, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
+	result, err := usecase.Execute(context.TODO(), long_url)
 
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err.Error())
@@ -32,7 +32,7 @@ func TestCreateShortUrl(t *testing.T) {
 		t.Fatalf("Expected '%s', received: '%s'", expected, result)
 	}
 
-	res, _ := provider.Get(context.TODO(), expected.String())
+	res, _ := provider.Get(context.TODO(), expected)
 
 	if res.String() != long_url.String() {
 		t.Fatalf("Expected: '%s', received: '%s'", long_url, res.String())
@@ -49,16 +49,16 @@ func (p *mock_provider) Save(_ context.Context, _ domain.Url, _ domain.ShortCode
 	return domain.ErrShortCodeCollision
 }
 
-func (*mock_provider) Get(_ context.Context, _ string) (domain.Url, error) {
+func (*mock_provider) Get(_ context.Context, _ domain.ShortCode) (domain.Url, error) {
 	return domain.Url{}, nil
 }
 
 func TestRetryFlow(t *testing.T) {
 	provider := &mock_provider{}
-	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{})
+	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{}, policy.NewRetryPolicyFactory(3))
 	expected := 3
 	long_url, _ := domain.NewUrl("https://exanubes.com")
-	_, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
+	_, err := usecase.Execute(context.TODO(), long_url)
 
 	if provider.called_counter != expected {
 		t.Fatalf("Expected %d retries, received %d", expected, provider.called_counter)

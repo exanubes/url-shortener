@@ -29,12 +29,12 @@ func (repository *Repository) Save(ctx context.Context, url domain.Url, short_co
 	return nil
 }
 
-func (repository *Repository) Get(ctx context.Context, input string) (domain.Url, error) {
+func (repository *Repository) Get(ctx context.Context, input domain.ShortCode) (domain.Url, error) {
 	if err := ctx.Err(); err != nil {
 		return domain.Url{}, err
 	}
 
-	url, exists := repository.cache[input]
+	url, exists := repository.cache[input.String()]
 
 	if !exists {
 		return domain.Url{}, domain.ErrUrlNotFound

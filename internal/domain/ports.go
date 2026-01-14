@@ -2,13 +2,11 @@ package domain
 
 import (
 	"context"
-
-	"github.com/exanubes/url-shortener/internal/app/policy"
 )
 
 type PersistenceProvider interface {
 	Save(context.Context, Url, ShortCode) error
-	Get(ctx context.Context, input string) (Url, error)
+	Get(context.Context, ShortCode) (Url, error)
 }
 
 type Encoder interface {
@@ -19,8 +17,16 @@ type TokenSpaceGenerator interface {
 	Generate() (Token, error)
 }
 
+type RetryPolicy interface {
+	Next() bool
+}
+
+type RetryPolicyFactory interface {
+	Create() RetryPolicy
+}
+
 type ForCreatingUrls interface {
-	Execute(ctx context.Context, url Url, policy policy.RetryPolicy) (ShortCode, error)
+	Execute(ctx context.Context, url Url) (ShortCode, error)
 }
 
 type ForVisitingUrls interface {
