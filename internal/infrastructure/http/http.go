@@ -1,4 +1,4 @@
-package drivers
+package http
 
 import (
 	"context"
@@ -9,8 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/exanubes/url-shortener/internal/domain"
-	"github.com/exanubes/url-shortener/internal/routes"
+	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
+	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes"
 )
 
 type HttpConfig struct {
@@ -22,7 +23,7 @@ type HttpConfig struct {
 	RequestTimeout  time.Duration
 }
 
-var DefaultHttpConfig = HttpConfig{
+var DefaultConfig = HttpConfig{
 	Port:            ":8000",
 	ReadTimeout:     5 * time.Second,
 	WriteTimeout:    5 * time.Second,
@@ -32,11 +33,11 @@ var DefaultHttpConfig = HttpConfig{
 }
 
 type HttpDriver struct {
-	create_url domain.ForCreatingUrls
-	visit_url  domain.ForVisitingUrls
+	create_url createshorturl.UseCase
+	visit_url  visitshorturl.UseCase
 }
 
-func NewHttpDriver(create_url domain.ForCreatingUrls, visit_url domain.ForVisitingUrls) *HttpDriver {
+func NewHttpDriver(create_url createshorturl.UseCase, visit_url visitshorturl.UseCase) *HttpDriver {
 	return &HttpDriver{
 		create_url: create_url,
 		visit_url:  visit_url,
@@ -45,7 +46,7 @@ func NewHttpDriver(create_url domain.ForCreatingUrls, visit_url domain.ForVisiti
 
 func (driver *HttpDriver) Run(ctx context.Context, config HttpConfig) error {
 	if config.Port == "" {
-		config.Port = DefaultHttpConfig.Port
+		config.Port = DefaultConfig.Port
 	}
 
 	server := &http.Server{

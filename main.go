@@ -4,27 +4,26 @@ import (
 	"context"
 	"log"
 
-	encoder "github.com/exanubes/url-shortener/internal/app/encoder/base_62"
-	"github.com/exanubes/url-shortener/internal/app/policy"
-	shortcodes "github.com/exanubes/url-shortener/internal/app/short_codes"
-	token_space "github.com/exanubes/url-shortener/internal/app/token_space_generator/base_62"
-	"github.com/exanubes/url-shortener/internal/drivers"
+	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
+	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
+	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	encoding "github.com/exanubes/url-shortener/internal/infrastructure/encoding/base_62"
+	"github.com/exanubes/url-shortener/internal/infrastructure/http"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/inmemory"
-	"github.com/exanubes/url-shortener/internal/usecase"
 )
 
 func main() {
 	provider := inmemory.NewInmemoryRepository()
-	encoder := encoder.New()
-	token_generator := token_space.New(int64(7))
-	policy_factory := policy.NewRetryPolicyFactory(3)
-	shortcodes_generator := shortcodes.New(token_generator, encoder)
-	create_short_url_use_case := usecase.NewCreateShortUrl(provider, shortcodes_generator, policy_factory)
-	visit_url_use_case := usecase.NewVisitShortUrl(provider)
+	encoder := encoding.New()
+	token_generator := shortcode.NewGenerator(int64(7))
+	policy_factory := createshorturl.NewRetryPolicyFactory(3)
+	shortcodes_service := shortcode.NewService(token_generator, encoder)
+	create_short_url_use_case := createshorturl.New(provider, shortcodes_service, policy_factory)
+	visit_url_use_case := visitshorturl.New(provider)
 
-	driver := drivers.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
+	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
 	ctx := context.Background()
-	if err := driver.Run(ctx, drivers.DefaultHttpConfig); err != nil {
+	if err := driver.Run(ctx, http.DefaultConfig); err != nil {
 		log.Fatal(err)
 	}
 }

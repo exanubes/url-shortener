@@ -6,22 +6,23 @@ import (
 	"net/http"
 	"time"
 
+	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type CreateUrlRoute struct {
-	usecase         domain.ForCreatingUrls
+	usecase         createshorturl.UseCase
 	request_timeout time.Duration
 }
 
-func NewCreateUrlRoute(request_timeout time.Duration, usecase domain.ForCreatingUrls) *CreateUrlRoute {
+func NewCreateUrlRoute(request_timeout time.Duration, usecase createshorturl.UseCase) *CreateUrlRoute {
 	return &CreateUrlRoute{usecase, request_timeout}
 }
 
 func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	ctx, cancel := context.WithTimeout(request.Context(), route.request_timeout)
 	defer cancel()
-	var payload PostRequestBody
+	var payload CreateUrlRequest
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 		return
@@ -48,15 +49,7 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 
 	response.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(response).Encode(PostResponseBody{
+	json.NewEncoder(response).Encode(CreateUrlResponse{
 		ShortUrl: result.String(),
 	})
-}
-
-type PostRequestBody struct {
-	Url string `json:"url"`
-}
-
-type PostResponseBody struct {
-	ShortUrl string `json:"short_url"`
 }

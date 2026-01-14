@@ -1,20 +1,20 @@
-package shortcodes
+package shortcode
 
 import "github.com/exanubes/url-shortener/internal/domain"
 
-type ShortcodesGenerator struct {
-	tokens  domain.TokenSpaceGenerator
-	encoder domain.Encoder
+type ShortCodeService struct {
+	tokens  TokenSpaceGenerator
+	encoder Encoder
 }
 
-func New(generator domain.TokenSpaceGenerator, encoder domain.Encoder) *ShortcodesGenerator {
-	return &ShortcodesGenerator{
+func NewService(generator TokenSpaceGenerator, encoder Encoder) *ShortCodeService {
+	return &ShortCodeService{
 		tokens:  generator,
 		encoder: encoder,
 	}
 }
 
-func (generator *ShortcodesGenerator) Generate() (domain.ShortCode, error) {
+func (generator *ShortCodeService) Generate() (domain.ShortCode, error) {
 	token, err := generator.tokens.Generate()
 
 	if err != nil {

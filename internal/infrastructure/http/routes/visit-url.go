@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type VisitUrlRoute struct {
-	usecase         domain.ForVisitingUrls
+	usecase         visitshorturl.UseCase
 	request_timeout time.Duration
 }
 
-func NewVisitUrlRoute(request_timeout time.Duration, usecase domain.ForVisitingUrls) *VisitUrlRoute {
+func NewVisitUrlRoute(request_timeout time.Duration, usecase visitshorturl.UseCase) *VisitUrlRoute {
 	return &VisitUrlRoute{usecase, request_timeout}
 }
 

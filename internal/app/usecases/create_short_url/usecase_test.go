@@ -1,10 +1,10 @@
-package usecase
+package createshorturl_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/exanubes/url-shortener/internal/app/policy"
+	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/inmemory"
 )
@@ -18,7 +18,7 @@ func (mock_shortcode_factory) Generate() (domain.ShortCode, error) {
 func TestCreateShortUrl(t *testing.T) {
 	provider := inmemory.NewInmemoryRepository()
 
-	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{}, policy.NewRetryPolicyFactory(3))
+	usecase := createshorturl.New(provider, mock_shortcode_factory{}, createshorturl.NewRetryPolicyFactory(3))
 
 	expected, _ := domain.NewShortCode("2TY", 7, "0")
 	long_url, _ := domain.NewUrl("https://exanubes.com")
@@ -32,7 +32,7 @@ func TestCreateShortUrl(t *testing.T) {
 		t.Fatalf("Expected '%s', received: '%s'", expected, result)
 	}
 
-	res, _ := provider.Get(context.TODO(), expected)
+	res, _ := provider.Resolve(context.TODO(), expected)
 
 	if res.String() != long_url.String() {
 		t.Fatalf("Expected: '%s', received: '%s'", long_url, res.String())
@@ -44,18 +44,18 @@ type mock_provider struct {
 	called_counter int
 }
 
-func (p *mock_provider) Save(_ context.Context, _ domain.Url, _ domain.ShortCode) error {
+func (p *mock_provider) Write(_ context.Context, _ domain.ShortCode, _ domain.Url) error {
 	p.called_counter += 1
 	return domain.ErrShortCodeCollision
 }
 
-func (*mock_provider) Get(_ context.Context, _ domain.ShortCode) (domain.Url, error) {
+func (*mock_provider) Resolve(_ context.Context, _ domain.ShortCode) (domain.Url, error) {
 	return domain.Url{}, nil
 }
 
 func TestRetryFlow(t *testing.T) {
 	provider := &mock_provider{}
-	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{}, policy.NewRetryPolicyFactory(3))
+	usecase := createshorturl.New(provider, mock_shortcode_factory{}, createshorturl.NewRetryPolicyFactory(3))
 	expected := 3
 	long_url, _ := domain.NewUrl("https://exanubes.com")
 	_, err := usecase.Execute(context.TODO(), long_url)

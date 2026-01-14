@@ -5,6 +5,14 @@ import (
 	"net/http"
 )
 
+type CreateUrlRequest struct {
+	Url string `json:"url"`
+}
+
+type CreateUrlResponse struct {
+	ShortUrl string `json:"short_url"`
+}
+
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`

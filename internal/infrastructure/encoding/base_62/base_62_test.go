@@ -4,12 +4,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/exanubes/url-shortener/internal/domain"
+	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
 )
 
 func TestBase62Encoding(t *testing.T) {
 	encoding := Base62Encoder{}
-	token, _ := domain.NewToken(big.NewInt(11_157), 7)
+	token, _ := shortcode.NewToken(big.NewInt(11_157), 7)
 	result := encoding.Encode(token)
 	expected := "2TX"
 

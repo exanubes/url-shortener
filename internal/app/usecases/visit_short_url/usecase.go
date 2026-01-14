@@ -1,4 +1,4 @@
-package usecase
+package visitshorturl
 
 import (
 	"context"
@@ -7,17 +7,17 @@ import (
 )
 
 type VisitShortUrl struct {
-	persistence domain.PersistenceProvider
+	resolver UrlResolver
 }
 
-func NewVisitShortUrl(provider domain.PersistenceProvider) *VisitShortUrl {
+func New(resolver UrlResolver) *VisitShortUrl {
 	return &VisitShortUrl{
-		persistence: provider,
+		resolver: resolver,
 	}
 }
 
 func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
-	result, err := usecase.persistence.Get(ctx, short_url)
+	result, err := usecase.resolver.Resolve(ctx, short_url)
 
 	if err != nil {
 		return domain.Url{}, err

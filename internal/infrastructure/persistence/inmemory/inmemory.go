@@ -16,7 +16,7 @@ func NewInmemoryRepository() *Repository {
 	}
 }
 
-func (repository *Repository) Save(ctx context.Context, url domain.Url, short_code domain.ShortCode) error {
+func (repository *Repository) Write(ctx context.Context, short_code domain.ShortCode, url domain.Url) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (repository *Repository) Save(ctx context.Context, url domain.Url, short_co
 	return nil
 }
 
-func (repository *Repository) Get(ctx context.Context, input domain.ShortCode) (domain.Url, error) {
+func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCode) (domain.Url, error) {
 	if err := ctx.Err(); err != nil {
 		return domain.Url{}, err
 	}
