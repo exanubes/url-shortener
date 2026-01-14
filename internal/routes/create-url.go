@@ -24,36 +24,34 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 	defer cancel()
 	var payload PostRequestBody
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
-		http.Error(response, "invalid payload", http.StatusBadRequest)
+		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 		return
 	}
 
 	if payload.Url == "" {
-		http.Error(response, "invalid payload", http.StatusBadRequest)
+		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", "Url cannot be empty")
 		return
 	}
 
 	url, err := domain.NewUrl(payload.Url)
 
 	if err != nil {
-		http.Error(response, "invalid payload", http.StatusBadRequest)
+		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 		return
 	}
 
 	result, err := route.usecase.Execute(ctx, url, policy.NewRetryPolicy(3))
 
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusInternalServerError)
+		write_error(response, http.StatusInternalServerError, "", err.Error())
 		return
-	}
-
-	output := PostResponseBody{
-		ShortUrl: result.String(),
 	}
 
 	response.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(response).Encode(output)
+	json.NewEncoder(response).Encode(PostResponseBody{
+		ShortUrl: result.String(),
+	})
 }
 
 type PostRequestBody struct {

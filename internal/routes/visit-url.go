@@ -25,11 +25,11 @@ func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *htt
 
 	if err != nil {
 		if err == domain.ErrUrlNotFound {
-			http.Error(response, err.Error(), http.StatusNotFound)
+			write_error(response, http.StatusNotFound, "URL_NOT_FOUND", err.Error())
 			return
 		}
 
-		http.Error(response, err.Error(), http.StatusInternalServerError)
+		write_error(response, http.StatusInternalServerError, "", err.Error())
 		return
 	}
 
