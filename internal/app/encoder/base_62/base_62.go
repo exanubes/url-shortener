@@ -24,7 +24,7 @@ func (Base62Encoder) Encode(token domain.Token) string {
 	var digits []rune
 	current := val
 	quotient := big.NewInt(62)
-	for val.Cmp(big.NewInt(0)) != 0 {
+	for current.Cmp(big.NewInt(0)) != 0 {
 		temp := new(big.Int)
 		temp.Mod(current, quotient)
 
