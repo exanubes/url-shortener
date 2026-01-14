@@ -20,7 +20,12 @@ func NewVisitUrlRoute(request_timeout time.Duration, usecase domain.ForVisitingU
 func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	ctx, cancel := context.WithTimeout(request.Context(), route.request_timeout)
 	defer cancel()
-	short_url := request.PathValue("short_url")
+	short_url, err := domain.NewShortCodeFromParam(request.PathValue("short_url"))
+
+	if err != nil {
+		write_error(response, http.StatusBadRequest, "INVALID_SHORT_CODE", err.Error())
+		return
+	}
 	result, err := route.usecase.Execute(ctx, short_url)
 
 	if err != nil {

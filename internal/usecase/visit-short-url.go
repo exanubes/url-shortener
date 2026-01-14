@@ -16,8 +16,8 @@ func NewVisitShortUrl(provider domain.PersistenceProvider) *VisitShortUrl {
 	}
 }
 
-func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url string) (domain.Url, error) {
-	result, err := usecase.persistence.Get(ctx, short_url)
+func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
+	result, err := usecase.persistence.Get(ctx, short_url.String())
 
 	if err != nil {
 		return domain.Url{}, err

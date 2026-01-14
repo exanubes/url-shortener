@@ -24,7 +24,7 @@ type ForCreatingUrls interface {
 }
 
 type ForVisitingUrls interface {
-	Execute(ctx context.Context, short_url string) (Url, error)
+	Execute(ctx context.Context, short_url ShortCode) (Url, error)
 }
 
 type ShortCodeGenerator interface {

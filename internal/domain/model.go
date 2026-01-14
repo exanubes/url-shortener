@@ -43,6 +43,20 @@ type ShortCode struct {
 	zero  string
 }
 
+func NewShortCodeFromParam(value string) (ShortCode, error) {
+	if len(value) > 11 {
+		return ShortCode{}, ErrInvalidShortCode
+	}
+	if !helpers.IsBase62(value) {
+		return ShortCode{}, ErrInvalidShortCode
+	}
+	return ShortCode{
+		value: value,
+		size:  len(value),
+		zero:  "0",
+	}, nil
+}
+
 func NewShortCode(value string, size int, zero_char string) (ShortCode, error) {
 	if size <= MIN_SHORT_CODE_SIZE {
 		return ShortCode{}, ErrShortCodeEmpty
