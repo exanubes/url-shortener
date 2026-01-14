@@ -9,4 +9,7 @@ var (
 	ErrInvalidShortCode   = errors.New("Invalid short code")
 	ErrExceededMaxSize    = errors.New("Exceeded maximum size")
 	ErrShortCodeEmpty     = errors.New("Empty short code")
+	ErrInvalidUrl         = errors.New("Invalid url")
+	ErrInvalidScheme      = errors.New("Invalid scheme")
+	ErrInvalidHost        = errors.New("Invalid host")
 )

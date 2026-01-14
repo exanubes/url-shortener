@@ -33,5 +33,5 @@ func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *htt
 		return
 	}
 
-	http.Redirect(response, request, result, http.StatusMovedPermanently)
+	http.Redirect(response, request, result.String(), http.StatusMovedPermanently)
 }

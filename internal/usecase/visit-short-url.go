@@ -16,12 +16,12 @@ func NewVisitShortUrl(provider domain.PersistenceProvider) *VisitShortUrl {
 	}
 }
 
-func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url string) (string, error) {
+func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url string) (domain.Url, error) {
 	result, err := usecase.persistence.Get(ctx, short_url)
 
 	if err != nil {
-		return "", err
+		return domain.Url{}, err
 	}
 
-	return result.Long, nil
+	return result, nil
 }

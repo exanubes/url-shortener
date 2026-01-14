@@ -20,26 +20,22 @@ func TestCreateShortUrl(t *testing.T) {
 
 	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{})
 
-	expected := "00002TY"
-	long_url := "https://exanubes.com"
+	expected, _ := domain.NewShortCode("2TY", 7, "0")
+	long_url, _ := domain.NewUrl("https://exanubes.com")
 	result, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
 
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err.Error())
 	}
 
-	if result != expected {
+	if result.String() != expected.String() {
 		t.Fatalf("Expected '%s', received: '%s'", expected, result)
 	}
 
-	res, _ := provider.Get(context.TODO(), expected)
+	res, _ := provider.Get(context.TODO(), expected.String())
 
-	if res.Long != long_url {
-		t.Fatalf("Expected: '%s', received: '%s'", long_url, res.Long)
-	}
-
-	if res.Short != expected {
-		t.Fatalf("Expected: '%s', received: '%s'", expected, res.Short)
+	if res.String() != long_url.String() {
+		t.Fatalf("Expected: '%s', received: '%s'", long_url, res.String())
 	}
 
 }
@@ -48,7 +44,7 @@ type mock_provider struct {
 	called_counter int
 }
 
-func (p *mock_provider) Save(_ context.Context, _ domain.Url) error {
+func (p *mock_provider) Save(_ context.Context, _ domain.Url, _ domain.ShortCode) error {
 	p.called_counter += 1
 	return domain.ErrShortCodeCollision
 }
@@ -61,7 +57,7 @@ func TestRetryFlow(t *testing.T) {
 	provider := &mock_provider{}
 	usecase := NewCreateShortUrl(provider, mock_shortcode_factory{})
 	expected := 3
-	long_url := "https://exanubes.com"
+	long_url, _ := domain.NewUrl("https://exanubes.com")
 	_, err := usecase.Execute(context.TODO(), long_url, policy.NewRetryPolicy(3))
 
 	if provider.called_counter != expected {

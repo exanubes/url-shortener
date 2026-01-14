@@ -28,13 +28,19 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 		return
 	}
 
-	// TODO: url validator
 	if payload.Url == "" {
 		http.Error(response, "invalid payload", http.StatusBadRequest)
 		return
 	}
 
-	result, err := route.usecase.Execute(ctx, payload.Url, policy.NewRetryPolicy(3))
+	url, err := domain.NewUrl(payload.Url)
+
+	if err != nil {
+		http.Error(response, "invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	result, err := route.usecase.Execute(ctx, url, policy.NewRetryPolicy(3))
 
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
@@ -42,13 +48,12 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 	}
 
 	output := PostResponseBody{
-		ShortUrl: result,
+		ShortUrl: result.String(),
 	}
 
 	response.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(response).Encode(output)
-
 }
 
 type PostRequestBody struct {

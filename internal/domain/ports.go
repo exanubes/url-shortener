@@ -7,7 +7,7 @@ import (
 )
 
 type PersistenceProvider interface {
-	Save(ctx context.Context, input Url) error
+	Save(context.Context, Url, ShortCode) error
 	Get(ctx context.Context, input string) (Url, error)
 }
 
@@ -20,11 +20,11 @@ type TokenSpaceGenerator interface {
 }
 
 type ForCreatingUrls interface {
-	Execute(ctx context.Context, url string, policy policy.RetryPolicy) (string, error)
+	Execute(ctx context.Context, url Url, policy policy.RetryPolicy) (ShortCode, error)
 }
 
 type ForVisitingUrls interface {
-	Execute(ctx context.Context, short_url string) (string, error)
+	Execute(ctx context.Context, short_url string) (Url, error)
 }
 
 type ShortCodeGenerator interface {

@@ -20,24 +20,21 @@ func NewCreateShortUrl(provider domain.PersistenceProvider, short_code_generator
 	}
 }
 
-func (usecase *CreateShortUrl) Execute(ctx context.Context, url string, retry policy.RetryPolicy) (string, error) {
+func (usecase *CreateShortUrl) Execute(ctx context.Context, url domain.Url, retry policy.RetryPolicy) (domain.ShortCode, error) {
 	for retry.Next() {
 		short_code, err := usecase.short_code_generator.Generate()
 		if err != nil {
-			return "", err
+			return domain.ShortCode{}, err
 		}
 
-		if err := usecase.persistence.Save(ctx, domain.Url{
-			Long:  url,
-			Short: short_code.String(),
-		}); err != nil {
+		if err := usecase.persistence.Save(ctx, url, short_code); err != nil {
 			if !errors.Is(err, domain.ErrShortCodeCollision) {
-				return "", err
+				return domain.ShortCode{}, err
 			}
 		} else {
-			return short_code.String(), nil
+			return short_code, nil
 		}
 	}
 
-	return "", errors.New("Failed to generate short code")
+	return domain.ShortCode{}, errors.New("Failed to generate short code")
 }

@@ -16,16 +16,16 @@ func NewInmemoryRepository() *Repository {
 	}
 }
 
-func (repository *Repository) Save(ctx context.Context, input domain.Url) error {
+func (repository *Repository) Save(ctx context.Context, url domain.Url, short_code domain.ShortCode) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	if _, exists := repository.cache[input.Short]; exists {
+	if _, exists := repository.cache[short_code.String()]; exists {
 		return domain.ErrShortCodeCollision
 	}
 
-	repository.cache[input.Short] = input
+	repository.cache[short_code.String()] = url
 	return nil
 }
 
