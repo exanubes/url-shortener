@@ -40,7 +40,7 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 		return
 	}
 
-	result, err := route.usecase.Execute(ctx, url)
+	link, err := route.usecase.Execute(ctx, url)
 
 	if err != nil {
 		write_error(response, http.StatusInternalServerError, "", err.Error())
@@ -50,6 +50,6 @@ func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *ht
 	response.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(response).Encode(CreateUrlResponse{
-		ShortUrl: result.String(),
+		ShortUrl: link.ShortCode().String(),
 	})
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
-type UrlWriter interface {
-	Write(context.Context, domain.ShortCode, domain.Url) error
+type LinkWriter interface {
+	Write(context.Context, *domain.Link) error
 }
 
 type Policy interface {
@@ -20,5 +20,5 @@ type PolicyFactory interface {
 }
 
 type UseCase interface {
-	Execute(context.Context, domain.Url) (domain.ShortCode, error)
+	Execute(context.Context, domain.Url) (*domain.Link, error)
 }

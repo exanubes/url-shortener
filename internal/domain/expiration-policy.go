@@ -8,7 +8,7 @@ type ExpirationPolicy interface {
 
 type ExpirationContext struct {
 	CreatedAt     time.Time
-	LastVisitedAt *time.Time
+	LastVisitedAt time.Time
 	VisitCount    int
 	Now           time.Time
 }

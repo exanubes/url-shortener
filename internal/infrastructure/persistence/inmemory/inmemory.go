@@ -7,25 +7,25 @@ import (
 )
 
 type Repository struct {
-	cache map[string]domain.Url
+	cache map[string]domain.LinkState
 }
 
 func NewInmemoryRepository() *Repository {
 	return &Repository{
-		cache: make(map[string]domain.Url),
+		cache: make(map[string]domain.LinkState),
 	}
 }
 
-func (repository *Repository) Write(ctx context.Context, short_code domain.ShortCode, url domain.Url) error {
+func (repository *Repository) Write(ctx context.Context, link *domain.Link) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	if _, exists := repository.cache[short_code.String()]; exists {
+	if _, exists := repository.cache[link.ShortCode().String()]; exists {
 		return domain.ErrShortCodeCollision
 	}
 
-	repository.cache[short_code.String()] = url
+	repository.cache[link.ShortCode().String()] = link.Snapshot()
 	return nil
 }
 
@@ -34,11 +34,11 @@ func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCod
 		return domain.Url{}, err
 	}
 
-	url, exists := repository.cache[input.String()]
+	link_state, exists := repository.cache[input.String()]
 
 	if !exists {
 		return domain.Url{}, domain.ErrUrlNotFound
 	}
 
-	return url, nil
+	return link_state.Url, nil
 }
