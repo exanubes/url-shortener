@@ -11,4 +11,5 @@ var (
 	ErrInvalidUrl         = errors.New("Invalid url")
 	ErrInvalidScheme      = errors.New("Invalid scheme")
 	ErrInvalidHost        = errors.New("Invalid host")
+	ErrLinkExpired        = errors.New("Expired link")
 )
