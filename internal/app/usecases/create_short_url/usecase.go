@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/exanubes/url-shortener/internal/app/services/expiration"
 	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
@@ -13,20 +14,26 @@ type CreateShortUrl struct {
 	writer             LinkWriter
 	short_code_service shortcode.Service
 	policy_factory     RetryPolicyFactory
+	expiration         expiration.Factory
 }
 
-func New(writer LinkWriter, short_code_service shortcode.Service, policy_factory RetryPolicyFactory) *CreateShortUrl {
+func New(writer LinkWriter, short_code_service shortcode.Service, policy_factory RetryPolicyFactory, expiration expiration.Factory) *CreateShortUrl {
 	return &CreateShortUrl{
 		writer:             writer,
 		short_code_service: short_code_service,
 		policy_factory:     policy_factory,
+		expiration:         expiration,
 	}
 }
 
 func (usecase *CreateShortUrl) Execute(ctx context.Context, cmd domain.CreateLinkCommand) (*domain.Link, error) {
 	retry_policy := usecase.policy_factory.Create()
-	// day := 24 * time.Hour
-	expiration_policy := domain.NewMaxLinkAgeExpirationPolicy(30 * time.Second)
+	expiration_policy, err := usecase.expiration.Create(cmd.PolicySettings)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for retry_policy.Next() {
 		short_code, err := usecase.short_code_service.Generate()
 		if err != nil {

@@ -52,10 +52,12 @@ type MaxLinkAgeExpirationPolicy struct {
 	age time.Duration
 }
 
-func NewMaxLinkAgeExpirationPolicy(age time.Duration) MaxLinkAgeExpirationPolicy {
-	return MaxLinkAgeExpirationPolicy{
-		age: age,
+func NewMaxLinkAgeExpirationPolicy(age time.Duration) (MaxLinkAgeExpirationPolicy, error) {
+	if age < time.Minute {
+		return MaxLinkAgeExpirationPolicy{}, ErrExceededMinAge
 	}
+
+	return MaxLinkAgeExpirationPolicy{age}, nil
 }
 
 func (policy MaxLinkAgeExpirationPolicy) Expired(context ExpirationContext) bool {
@@ -63,4 +65,47 @@ func (policy MaxLinkAgeExpirationPolicy) Expired(context ExpirationContext) bool
 
 	return context.Now.After(expires_at)
 
+}
+
+type MaxVisitsExpirationPolicy struct {
+	visits int
+}
+
+func NewMaxVisitsExpirationPolicy(visits int) (MaxVisitsExpirationPolicy, error) {
+	if visits < 0 {
+		return MaxVisitsExpirationPolicy{}, ErrExceededMinVisits
+	}
+
+	if visits > max_visits_limit {
+		return MaxVisitsExpirationPolicy{}, ErrExceededMaxVisits
+	}
+
+	return MaxVisitsExpirationPolicy{visits}, nil
+}
+
+func (policy MaxVisitsExpirationPolicy) Expired(context ExpirationContext) bool {
+
+	return context.VisitCount >= policy.visits
+}
+
+type ChainExpirationPolicy struct {
+	policies []ExpirationPolicy
+}
+
+func NewChainExpirationPolicy(policies []ExpirationPolicy) (ChainExpirationPolicy, error) {
+	if len(policies) == 0 {
+		return ChainExpirationPolicy{}, ErrUndefinedExpirationPolicy
+	}
+
+	return ChainExpirationPolicy{policies}, nil
+}
+
+func (policy ChainExpirationPolicy) Expired(context ExpirationContext) bool {
+	for _, p := range policy.policies {
+		if p.Expired(context) {
+			return true
+		}
+	}
+
+	return false
 }

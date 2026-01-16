@@ -42,7 +42,6 @@ func new_link(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at 
 }
 
 func (link *Link) Visit(now time.Time) (Url, error) {
-
 	expired := link.policy.Expired(ExpirationContext{
 		CreatedAt:     link.created_at,
 		LastVisitedAt: link.last_visit,
@@ -68,7 +67,7 @@ func (link Link) ShortCode() ShortCode {
 	return link.shortcode
 }
 
-func (link Link) Snapshot() LinkState {
+func (link *Link) Snapshot() LinkState {
 	return LinkState{
 		Url:       link.url,
 		Shortcode: link.shortcode,
