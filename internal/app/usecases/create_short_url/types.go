@@ -20,5 +20,5 @@ type PolicyFactory interface {
 }
 
 type UseCase interface {
-	Execute(context.Context, domain.Url) (*domain.Link, error)
+	Execute(context.Context, domain.CreateLinkCommand) (*domain.Link, error)
 }

@@ -7,6 +7,7 @@ import (
 
 	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
 	"github.com/exanubes/url-shortener/internal/domain"
+	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/dto"
 )
 
 type VisitUrlRoute struct {
@@ -24,23 +25,24 @@ func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *htt
 	short_url, err := domain.NewShortCodeFromParam(request.PathValue("short_url"))
 
 	if err != nil {
-		write_error(response, http.StatusBadRequest, "INVALID_SHORT_CODE", err.Error())
+		dto.WriteError(response, http.StatusBadRequest, "INVALID_SHORT_CODE", err.Error())
 		return
 	}
+
 	result, err := route.usecase.Execute(ctx, short_url)
 
 	if err != nil {
 		if err == domain.ErrUrlNotFound {
-			write_error(response, http.StatusNotFound, "URL_NOT_FOUND", err.Error())
+			dto.WriteError(response, http.StatusNotFound, "URL_NOT_FOUND", err.Error())
 			return
 		}
 
 		if err == domain.ErrLinkExpired {
-			write_error(response, http.StatusGone, "LINK_EXPIRED", err.Error())
+			dto.WriteError(response, http.StatusGone, "LINK_EXPIRED", err.Error())
 			return
 		}
 
-		write_error(response, http.StatusInternalServerError, "", err.Error())
+		dto.WriteError(response, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
 		return
 	}
 

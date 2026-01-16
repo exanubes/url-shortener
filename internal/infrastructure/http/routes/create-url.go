@@ -7,7 +7,8 @@ import (
 	"time"
 
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
-	"github.com/exanubes/url-shortener/internal/domain"
+	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/dto"
+	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/mapper"
 )
 
 type CreateUrlRoute struct {
@@ -22,34 +23,26 @@ func NewCreateUrlRoute(request_timeout time.Duration, usecase createshorturl.Use
 func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	ctx, cancel := context.WithTimeout(request.Context(), route.request_timeout)
 	defer cancel()
-	var payload CreateUrlRequest
+	var payload dto.CreateUrlRequest
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
-		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
+		dto.WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 		return
 	}
-
-	if payload.Url == "" {
-		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", "Url cannot be empty")
-		return
+	command, err := mapper.ToCreateLinkCommand(payload)
+	if err != nil {
+		dto.WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 	}
 
-	url, err := domain.NewUrl(payload.Url)
+	link, err := route.usecase.Execute(ctx, command)
 
 	if err != nil {
-		write_error(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
-		return
-	}
-
-	link, err := route.usecase.Execute(ctx, url)
-
-	if err != nil {
-		write_error(response, http.StatusInternalServerError, "", err.Error())
+		dto.WriteError(response, http.StatusInternalServerError, "", err.Error())
 		return
 	}
 
 	response.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(response).Encode(CreateUrlResponse{
+	json.NewEncoder(response).Encode(dto.CreateUrlResponse{
 		ShortUrl: link.ShortCode().String(),
 	})
 }

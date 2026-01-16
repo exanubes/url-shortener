@@ -1,12 +1,21 @@
-package routes
+package dto
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
+type ExpirationUnit string
+
+type ExpirationTimeDefinition struct {
+	Value int            `json:"value"`
+	Unit  ExpirationUnit `json:"unit"`
+}
+
 type CreateUrlRequest struct {
-	Url string `json:"url"`
+	Url          string                   `json:"url"`
+	OneTimeLink  bool                     `json:"one_time_link"`
+	ExpiresAfter ExpirationTimeDefinition `json:"expires_after"`
 }
 
 type CreateUrlResponse struct {
@@ -19,7 +28,7 @@ type ErrorResponse struct {
 	Code    string `json:"code,omitempty"`
 }
 
-func write_error(response http.ResponseWriter, status_code int, err_code, message string) {
+func WriteError(response http.ResponseWriter, status_code int, err_code, message string) {
 	response.Header().Set("Content-Type", "application/json")
 	response.WriteHeader(status_code)
 	json.NewEncoder(response).Encode(ErrorResponse{

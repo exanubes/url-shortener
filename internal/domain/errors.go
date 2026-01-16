@@ -12,4 +12,8 @@ var (
 	ErrInvalidScheme      = errors.New("Invalid scheme")
 	ErrInvalidHost        = errors.New("Invalid host")
 	ErrLinkExpired        = errors.New("Expired link")
+	ErrExceededMinVisits  = errors.New("Exceeded minimum visits")
+	ErrExceededMaxVisits  = errors.New("Exceeded maximum visits")
+	ErrExceededMinAge     = errors.New("Exceeded min age")
+	ErrExceededMaxAge     = errors.New("Exceeded max age")
 )
