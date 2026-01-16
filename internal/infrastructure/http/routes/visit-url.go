@@ -35,9 +35,14 @@ func (route *VisitUrlRoute) ServeHTTP(response http.ResponseWriter, request *htt
 			return
 		}
 
+		if err == domain.ErrLinkExpired {
+			write_error(response, http.StatusGone, "LINK_EXPIRED", err.Error())
+			return
+		}
+
 		write_error(response, http.StatusInternalServerError, "", err.Error())
 		return
 	}
 
-	http.Redirect(response, request, result.String(), http.StatusMovedPermanently)
+	http.Redirect(response, request, result.String(), http.StatusTemporaryRedirect)
 }

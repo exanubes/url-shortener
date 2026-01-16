@@ -25,8 +25,8 @@ func New(writer LinkWriter, short_code_service shortcode.Service, policy_factory
 
 func (usecase *CreateShortUrl) Execute(ctx context.Context, url domain.Url) (*domain.Link, error) {
 	retry_policy := usecase.policy_factory.Create()
-	day := 24 * time.Hour
-	expiration_policy := domain.NewMaxLinkAgeExpirationPolicy(30 * day)
+	// day := 24 * time.Hour
+	expiration_policy := domain.NewMaxLinkAgeExpirationPolicy(30 * time.Second)
 	for retry_policy.Next() {
 		short_code, err := usecase.short_code_service.Generate()
 		if err != nil {
