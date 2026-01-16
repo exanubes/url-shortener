@@ -2,6 +2,7 @@ package visitshorturl
 
 import (
 	"context"
+	"time"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
@@ -17,11 +18,11 @@ func New(resolver UrlResolver) *VisitShortUrl {
 }
 
 func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
-	result, err := usecase.resolver.Resolve(ctx, short_url)
+	link, err := usecase.resolver.Resolve(ctx, short_url)
 
 	if err != nil {
 		return domain.Url{}, err
 	}
 
-	return result, nil
+	return link.Visit(time.Now())
 }

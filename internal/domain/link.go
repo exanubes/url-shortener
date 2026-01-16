@@ -22,8 +22,8 @@ type Link struct {
 	last_visit time.Time
 }
 
-func RehydrateLink(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, visits int, last_visit time.Time) *Link {
-	return new_link(url, shortcode, policy, created_at, visits, last_visit)
+func RehydrateLink(state LinkState) *Link {
+	return new_link(state.Url, state.Shortcode, state.Policy, state.CreatedAt, state.Visits, state.LastVisit)
 }
 
 func CreateLink(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time) *Link {

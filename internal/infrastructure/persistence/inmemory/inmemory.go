@@ -29,16 +29,16 @@ func (repository *Repository) Write(ctx context.Context, link *domain.Link) erro
 	return nil
 }
 
-func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCode) (domain.Url, error) {
+func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCode) (*domain.Link, error) {
 	if err := ctx.Err(); err != nil {
-		return domain.Url{}, err
+		return nil, err
 	}
 
 	link_state, exists := repository.cache[input.String()]
 
 	if !exists {
-		return domain.Url{}, domain.ErrUrlNotFound
+		return nil, domain.ErrUrlNotFound
 	}
 
-	return link_state.Url, nil
+	return domain.RehydrateLink(link_state), nil
 }

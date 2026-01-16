@@ -7,7 +7,7 @@ import (
 )
 
 type UrlResolver interface {
-	Resolve(context.Context, domain.ShortCode) (domain.Url, error)
+	Resolve(context.Context, domain.ShortCode) (*domain.Link, error)
 }
 
 type UseCase interface {
