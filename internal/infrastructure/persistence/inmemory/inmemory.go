@@ -42,3 +42,24 @@ func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCod
 
 	return domain.RehydrateLink(link_state), nil
 }
+
+// Consume single-use link, do not use with multi-use links
+func (repository *Repository) Consume(ctx context.Context, input domain.ShortCode) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	link_state, exists := repository.cache[input.String()]
+
+	if !exists {
+		return domain.ErrUrlNotFound
+	}
+
+	if link_state.Usage == domain.LinkUsage_Single && link_state.Status == domain.LinkStatus_New {
+		link_state.Status = domain.LinkStatus_Expired
+		repository.cache[input.String()] = link_state
+		return nil
+	}
+
+	return domain.ErrLinkExpired
+}

@@ -8,12 +8,14 @@ import (
 )
 
 type VisitShortUrl struct {
-	resolver UrlResolver
+	resolver LinkResolver
+	consumer LinkConsumer
 }
 
-func New(resolver UrlResolver) *VisitShortUrl {
+func New(resolver LinkResolver, consumer LinkConsumer) *VisitShortUrl {
 	return &VisitShortUrl{
 		resolver: resolver,
+		consumer: consumer,
 	}
 }
 
@@ -24,5 +26,17 @@ func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.Shor
 		return domain.Url{}, err
 	}
 
-	return link.Visit(time.Now())
+	url, err := link.Visit(time.Now())
+
+	if err != nil {
+		return domain.Url{}, err
+	}
+
+	if link.SingleUse() {
+		if err := usecase.consumer.Consume(ctx, short_url); err != nil {
+			return domain.Url{}, err
+		}
+	}
+
+	return url, nil
 }

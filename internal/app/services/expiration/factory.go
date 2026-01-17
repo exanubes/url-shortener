@@ -21,6 +21,9 @@ func (factory ExpirationFactory) Create(settings domain.PolicySettings) (domain.
 		policies = append(policies, policy)
 	}
 
+	if settings.IsSingleUse() {
+		policies = append(policies, domain.NewOneTimeLinkExpirationPolicy())
+	}
 	if settings.HasMaxVisitsLimit() {
 		policy, err := domain.NewMaxVisitsExpirationPolicy(settings.MaxVisits)
 

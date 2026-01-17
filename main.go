@@ -21,7 +21,7 @@ func main() {
 	expiration_factory := expiration.NewFactory()
 	shortcodes_service := shortcode.NewService(token_generator, encoder)
 	create_short_url_use_case := createshorturl.New(provider, shortcodes_service, policy_factory, expiration_factory)
-	visit_url_use_case := visitshorturl.New(provider)
+	visit_url_use_case := visitshorturl.New(provider, provider)
 
 	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
 	ctx := context.Background()

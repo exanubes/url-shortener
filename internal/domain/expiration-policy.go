@@ -1,12 +1,15 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
 const max_visits_limit = 100
 
 type PolicySettings struct {
 	MaxVisits int
 	MaxAge    time.Duration
+	Usage     LinkUsage
 }
 
 func (settings PolicySettings) HasMaxVisitsLimit() bool {
@@ -17,7 +20,11 @@ func (settings PolicySettings) HasMaxAgeLimit() bool {
 	return settings.MaxAge > 0
 }
 
-func NewPolicySettings(max_visits int, max_age time.Duration) (PolicySettings, error) {
+func (settings PolicySettings) IsSingleUse() bool {
+	return settings.Usage == LinkUsage_Single
+}
+
+func NewPolicySettings(max_visits int, max_age time.Duration, usage LinkUsage) (PolicySettings, error) {
 	if max_visits < 0 {
 		return PolicySettings{}, ErrExceededMinVisits
 	}
@@ -34,7 +41,7 @@ func NewPolicySettings(max_visits int, max_age time.Duration) (PolicySettings, e
 	if max_age > year {
 		return PolicySettings{}, ErrExceededMaxAge
 	}
-	return PolicySettings{MaxVisits: max_visits, MaxAge: max_age}, nil
+	return PolicySettings{MaxVisits: max_visits, MaxAge: max_age, Usage: usage}, nil
 }
 
 type ExpirationPolicy interface {
@@ -46,6 +53,7 @@ type ExpirationContext struct {
 	LastVisitedAt time.Time
 	VisitCount    int
 	Now           time.Time
+	Status        LinkStatus
 }
 
 type MaxLinkAgeExpirationPolicy struct {
@@ -84,8 +92,19 @@ func NewMaxVisitsExpirationPolicy(visits int) (MaxVisitsExpirationPolicy, error)
 }
 
 func (policy MaxVisitsExpirationPolicy) Expired(context ExpirationContext) bool {
-
 	return context.VisitCount >= policy.visits
+}
+
+type OneTimeLinkExpirationPolicy struct {
+}
+
+func NewOneTimeLinkExpirationPolicy() OneTimeLinkExpirationPolicy {
+
+	return OneTimeLinkExpirationPolicy{}
+}
+
+func (OneTimeLinkExpirationPolicy) Expired(context ExpirationContext) bool {
+	return context.Status != LinkStatus_New
 }
 
 type ChainExpirationPolicy struct {

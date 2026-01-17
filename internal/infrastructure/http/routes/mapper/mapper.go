@@ -29,14 +29,13 @@ func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand
 		payload.ExpiresAfter.Unit = "day"
 	}
 
-	max_visits := 0
 	max_age := time.Duration(payload.ExpiresAfter.Value) * parse_unit(payload.ExpiresAfter.Unit)
-
+	usage := domain.LinkUsage_Multi
 	if payload.OneTimeLink {
-		max_visits = 1
+		usage = domain.LinkUsage_Single
 	}
 
-	policy_settings, err := domain.NewPolicySettings(max_visits, max_age)
+	policy_settings, err := domain.NewPolicySettings(0, max_age, usage)
 
 	if err != nil {
 		return domain.CreateLinkCommand{}, err
@@ -45,6 +44,7 @@ func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand
 	return domain.CreateLinkCommand{
 		Url:            url,
 		PolicySettings: policy_settings,
+		Usage:          usage,
 	}, nil
 }
 

@@ -39,7 +39,8 @@ func (usecase *CreateShortUrl) Execute(ctx context.Context, cmd domain.CreateLin
 		if err != nil {
 			return nil, err
 		}
-		link := domain.CreateLink(cmd.Url, short_code, expiration_policy, time.Now())
+
+		link := domain.CreateLink(cmd.Url, short_code, expiration_policy, time.Now(), cmd.Usage)
 
 		if err := usecase.writer.Write(ctx, link); err != nil {
 			if retry_policy.Verify(err) {

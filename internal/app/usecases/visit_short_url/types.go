@@ -6,8 +6,12 @@ import (
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
-type UrlResolver interface {
+type LinkResolver interface {
 	Resolve(context.Context, domain.ShortCode) (*domain.Link, error)
+}
+
+type LinkConsumer interface {
+	Consume(context.Context, domain.ShortCode) error
 }
 
 type UseCase interface {
