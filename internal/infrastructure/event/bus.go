@@ -44,7 +44,6 @@ func (bus *Bus) Start(ctx context.Context) {
 		for {
 			select {
 			case event, ok := <-bus.events:
-
 				if !ok {
 					return
 				}

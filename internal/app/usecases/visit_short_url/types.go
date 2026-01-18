@@ -17,3 +17,7 @@ type LinkConsumer interface {
 type UseCase interface {
 	Execute(context.Context, domain.ShortCode) (domain.Url, error)
 }
+
+type EventPublisher interface {
+	Publish(domain.LinkVisited) bool
+}

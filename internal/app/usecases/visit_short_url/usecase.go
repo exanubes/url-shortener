@@ -8,14 +8,16 @@ import (
 )
 
 type VisitShortUrl struct {
-	resolver LinkResolver
-	consumer LinkConsumer
+	resolver  LinkResolver
+	consumer  LinkConsumer
+	publisher EventPublisher
 }
 
-func New(resolver LinkResolver, consumer LinkConsumer) *VisitShortUrl {
+func New(resolver LinkResolver, consumer LinkConsumer, publisher EventPublisher) *VisitShortUrl {
 	return &VisitShortUrl{
-		resolver: resolver,
-		consumer: consumer,
+		resolver:  resolver,
+		consumer:  consumer,
+		publisher: publisher,
 	}
 }
 
@@ -25,8 +27,8 @@ func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.Shor
 	if err != nil {
 		return domain.Url{}, err
 	}
-
-	url, err := link.Visit(time.Now())
+	now := time.Now()
+	url, err := link.Visit(now)
 
 	if err != nil {
 		return domain.Url{}, err
@@ -37,6 +39,11 @@ func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.Shor
 			return domain.Url{}, err
 		}
 	}
+
+	usecase.publisher.Publish(domain.LinkVisited{
+		ShortCode: short_url.String(),
+		VisitedAt: now,
+	})
 
 	return url, nil
 }

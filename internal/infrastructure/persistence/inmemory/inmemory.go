@@ -36,7 +36,6 @@ func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCod
 	}
 
 	link_state, err := repository.get(input.String())
-
 	if err != nil {
 		return nil, err
 	}
