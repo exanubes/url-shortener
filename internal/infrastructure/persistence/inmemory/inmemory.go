@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"context"
+	"time"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
@@ -34,10 +35,10 @@ func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCod
 		return nil, err
 	}
 
-	link_state, exists := repository.cache[input.String()]
+	link_state, err := repository.get(input.String())
 
-	if !exists {
-		return nil, domain.ErrUrlNotFound
+	if err != nil {
+		return nil, err
 	}
 
 	return domain.RehydrateLink(link_state), nil
@@ -49,10 +50,10 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 		return err
 	}
 
-	link_state, exists := repository.cache[input.String()]
+	link_state, err := repository.get(input.String())
 
-	if !exists {
-		return domain.ErrUrlNotFound
+	if err != nil {
+		return err
 	}
 
 	if link_state.Usage == domain.LinkUsage_Single && link_state.Status == domain.LinkStatus_New {
@@ -62,4 +63,29 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 	}
 
 	return domain.ErrLinkExpired
+}
+
+func (repository *Repository) Visit(ctx context.Context, key domain.ShortCode, date time.Time) error {
+	link_state, err := repository.get(key.String())
+
+	if err != nil {
+		return err
+	}
+
+	link_state.Visits += 1
+	link_state.LastVisit = date
+
+	repository.cache[key.String()] = link_state
+
+	return nil
+}
+
+func (repository *Repository) get(key string) (domain.LinkState, error) {
+	link_state, exists := repository.cache[key]
+
+	if !exists {
+		return domain.LinkState{}, domain.ErrUrlNotFound
+	}
+
+	return link_state, nil
 }
