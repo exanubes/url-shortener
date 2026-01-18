@@ -87,9 +87,6 @@ func (link *Link) Visit(now time.Time) (Url, error) {
 		return Url{}, ErrLinkExpired
 	}
 
-	link.visits += 1
-	link.last_visit = now
-
 	return link.url, nil
 }
 

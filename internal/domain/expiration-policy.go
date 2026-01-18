@@ -75,26 +75,6 @@ func (policy MaxLinkAgeExpirationPolicy) Expired(context ExpirationContext) bool
 
 }
 
-type MaxVisitsExpirationPolicy struct {
-	visits int
-}
-
-func NewMaxVisitsExpirationPolicy(visits int) (MaxVisitsExpirationPolicy, error) {
-	if visits < 0 {
-		return MaxVisitsExpirationPolicy{}, ErrExceededMinVisits
-	}
-
-	if visits > max_visits_limit {
-		return MaxVisitsExpirationPolicy{}, ErrExceededMaxVisits
-	}
-
-	return MaxVisitsExpirationPolicy{visits}, nil
-}
-
-func (policy MaxVisitsExpirationPolicy) Expired(context ExpirationContext) bool {
-	return context.VisitCount >= policy.visits
-}
-
 type OneTimeLinkExpirationPolicy struct {
 }
 
