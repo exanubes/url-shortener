@@ -14,9 +14,16 @@ import (
 	"github.com/exanubes/url-shortener/internal/infrastructure/event"
 	"github.com/exanubes/url-shortener/internal/infrastructure/http"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/inmemory"
+	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/postgresql"
 )
 
 func main() {
+	ctx := context.Background()
+	db_client, err := postgresql.NewClient(ctx, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	database := postgresql.NewPostgresqlRepository(db_client)
 	provider := inmemory.NewInmemoryRepository()
 	processor := analytics.NewLinkVisitedProcessor(provider)
 	event_bus := event.NewBus(func(event domain.LinkVisited) error { return processor.Handler(event) })
@@ -29,7 +36,6 @@ func main() {
 	visit_url_use_case := visitshorturl.New(provider, provider, event_bus)
 
 	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
-	ctx := context.Background()
 	event_bus.Start(ctx)
 	if err := driver.Run(ctx, http.DefaultConfig); err != nil {
 		log.Fatal(err)
