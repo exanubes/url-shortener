@@ -33,3 +33,7 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 func (repository *Repository) Visit(ctx context.Context, key domain.ShortCode, date time.Time) error {
 	return nil
 }
+
+func (repository *Repository) Close() error {
+	return repository.client.db.Close()
+}
