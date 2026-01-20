@@ -8,12 +8,13 @@ import (
 )
 
 type Repository struct {
-	cache map[string]domain.LinkState
+	links  map[string]domain.LinkState
+	visits map[string][]analytics
 }
 
 func NewInmemoryRepository() *Repository {
 	return &Repository{
-		cache: make(map[string]domain.LinkState),
+		links: make(map[string]domain.LinkState),
 	}
 }
 
@@ -22,11 +23,11 @@ func (repository *Repository) Write(ctx context.Context, link *domain.Link) erro
 		return err
 	}
 
-	if _, exists := repository.cache[link.ShortCode().String()]; exists {
+	if _, exists := repository.links[link.ShortCode().String()]; exists {
 		return domain.ErrShortCodeCollision
 	}
 
-	repository.cache[link.ShortCode().String()] = link.Snapshot()
+	repository.links[link.ShortCode().String()] = link.Snapshot()
 	return nil
 }
 
@@ -55,9 +56,9 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 		return err
 	}
 
-	if link_state.Usage == domain.LinkUsage_Single && link_state.Status == domain.LinkStatus_New {
-		link_state.Status = domain.LinkStatus_Expired
-		repository.cache[input.String()] = link_state
+	if link_state.Usage == domain.LinkUsage_Single && link_state.ConsumedAt.IsZero() {
+		link_state.ConsumedAt = time.Now()
+		repository.links[input.String()] = link_state
 		return nil
 	}
 
@@ -65,26 +66,24 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 }
 
 func (repository *Repository) Visit(ctx context.Context, key domain.ShortCode, date time.Time) error {
-	link_state, err := repository.get(key.String())
-
-	if err != nil {
-		return err
-	}
-
-	link_state.Visits += 1
-	link_state.LastVisit = date
-
-	repository.cache[key.String()] = link_state
+	visit := analytics{shortcode: key.String(), visited_at: date, ip_address: "0.0.0.0"}
+	repository.visits[key.String()] = append(repository.visits[key.String()], visit)
 
 	return nil
 }
 
 func (repository *Repository) get(key string) (domain.LinkState, error) {
-	link_state, exists := repository.cache[key]
+	link_state, exists := repository.links[key]
 
 	if !exists {
 		return domain.LinkState{}, domain.ErrUrlNotFound
 	}
 
 	return link_state, nil
+}
+
+type analytics struct {
+	shortcode  string
+	visited_at time.Time
+	ip_address string
 }

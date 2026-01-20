@@ -5,82 +5,54 @@ import (
 )
 
 type LinkUsage int
-type LinkStatus string
 
 const (
 	LinkUsage_Multi LinkUsage = iota
 	LinkUsage_Single
 )
 
-const (
-	LinkStatus_New     LinkStatus = "new"
-	LinkStatus_Active  LinkStatus = "active"
-	LinkStatus_Expired LinkStatus = "expired"
-)
-
-func NewLinkStatus(input string) LinkStatus {
-	switch input {
-	case "new":
-		return LinkStatus_New
-	case "active":
-		return LinkStatus_Active
-	case "expired":
-		return LinkStatus_Expired
-	}
-
-	return "unknown"
-}
-
 type LinkState struct {
-	Url       Url
-	Shortcode ShortCode
-	Policy    ExpirationPolicy
-	CreatedAt time.Time
-	Visits    int
-	LastVisit time.Time
-	Status    LinkStatus
-	Usage     LinkUsage
+	Url        Url
+	Shortcode  ShortCode
+	Policy     ExpirationPolicy
+	CreatedAt  time.Time
+	ConsumedAt time.Time
+	Usage      LinkUsage
 }
 
 type Link struct {
-	url        Url
-	shortcode  ShortCode
-	policy     ExpirationPolicy
-	created_at time.Time
-	visits     int
-	last_visit time.Time
-	status     LinkStatus
-	usage      LinkUsage
+	url         Url
+	shortcode   ShortCode
+	policy      ExpirationPolicy
+	created_at  time.Time
+	consumed_at time.Time
+	usage       LinkUsage
 }
 
 func RehydrateLink(state LinkState) *Link {
-	return new_link(state.Url, state.Shortcode, state.Policy, state.CreatedAt, state.Visits, state.LastVisit, state.Status, state.Usage)
+	return new_link(state.Url, state.Shortcode, state.Policy, state.CreatedAt, state.ConsumedAt, state.Usage)
 }
 
 func CreateLink(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, usage LinkUsage) *Link {
-	return new_link(url, shortcode, policy, created_at, 0, time.Time{}, LinkStatus_New, usage)
+	return new_link(url, shortcode, policy, created_at, time.Time{}, usage)
 }
 
-func new_link(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, visits int, last_visit time.Time, status LinkStatus, usage LinkUsage) *Link {
+func new_link(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, consumed_at time.Time, usage LinkUsage) *Link {
 	return &Link{
-		url:        url,
-		shortcode:  shortcode,
-		policy:     policy,
-		created_at: created_at,
-		visits:     visits,
-		last_visit: last_visit,
-		status:     status,
-		usage:      usage,
+		url:         url,
+		shortcode:   shortcode,
+		policy:      policy,
+		created_at:  created_at,
+		consumed_at: consumed_at,
+		usage:       usage,
 	}
 }
 
 func (link *Link) Visit(now time.Time) (Url, error) {
 	expired := link.policy.Expired(ExpirationContext{
-		CreatedAt:     link.created_at,
-		LastVisitedAt: link.last_visit,
-		VisitCount:    link.visits,
-		Status:        link.status,
-		Now:           now,
+		CreatedAt:  link.created_at,
+		Now:        now,
+		ConsumedAt: link.consumed_at,
 	})
 
 	if expired {
@@ -100,14 +72,12 @@ func (link Link) ShortCode() ShortCode {
 
 func (link *Link) Snapshot() LinkState {
 	return LinkState{
-		Url:       link.url,
-		Shortcode: link.shortcode,
-		Policy:    link.policy,
-		CreatedAt: link.created_at,
-		Visits:    link.visits,
-		LastVisit: link.last_visit,
-		Status:    link.status,
-		Usage:     link.usage,
+		Url:        link.url,
+		Shortcode:  link.shortcode,
+		Policy:     link.policy,
+		CreatedAt:  link.created_at,
+		ConsumedAt: link.consumed_at,
+		Usage:      link.usage,
 	}
 }
 

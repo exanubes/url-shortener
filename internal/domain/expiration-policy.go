@@ -7,13 +7,9 @@ import (
 const max_visits_limit = 100
 
 type PolicySettings struct {
-	MaxVisits int
-	MaxAge    time.Duration
-	Usage     LinkUsage
-}
-
-func (settings PolicySettings) HasMaxVisitsLimit() bool {
-	return settings.MaxVisits > 0
+	MaxAge     time.Duration
+	ConsumedAt time.Time
+	Usage      LinkUsage
 }
 
 func (settings PolicySettings) HasMaxAgeLimit() bool {
@@ -41,7 +37,7 @@ func NewPolicySettings(max_visits int, max_age time.Duration, usage LinkUsage) (
 	if max_age > year {
 		return PolicySettings{}, ErrExceededMaxAge
 	}
-	return PolicySettings{MaxVisits: max_visits, MaxAge: max_age, Usage: usage}, nil
+	return PolicySettings{MaxAge: max_age, Usage: usage}, nil
 }
 
 type ExpirationPolicy interface {
@@ -49,11 +45,9 @@ type ExpirationPolicy interface {
 }
 
 type ExpirationContext struct {
-	CreatedAt     time.Time
-	LastVisitedAt time.Time
-	VisitCount    int
-	Now           time.Time
-	Status        LinkStatus
+	CreatedAt  time.Time
+	ConsumedAt time.Time
+	Now        time.Time
 }
 
 type MaxLinkAgeExpirationPolicy struct {
@@ -84,7 +78,7 @@ func NewOneTimeLinkExpirationPolicy() OneTimeLinkExpirationPolicy {
 }
 
 func (OneTimeLinkExpirationPolicy) Expired(context ExpirationContext) bool {
-	return context.Status != LinkStatus_New
+	return !context.ConsumedAt.IsZero()
 }
 
 type ChainExpirationPolicy struct {
