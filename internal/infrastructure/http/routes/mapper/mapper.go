@@ -30,12 +30,8 @@ func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand
 	}
 
 	max_age := time.Duration(payload.ExpiresAfter.Value) * parse_unit(payload.ExpiresAfter.Unit)
-	usage := domain.LinkUsage_Multi
-	if payload.OneTimeLink {
-		usage = domain.LinkUsage_Single
-	}
 
-	policy_settings, err := domain.NewPolicySettings(0, max_age, usage)
+	policy_settings, err := domain.NewPolicySettings(max_age, payload.OneTimeLink)
 
 	if err != nil {
 		return domain.CreateLinkCommand{}, err
@@ -44,17 +40,16 @@ func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand
 	return domain.CreateLinkCommand{
 		Url:            url,
 		PolicySettings: policy_settings,
-		Usage:          usage,
 	}, nil
 }
 
 func parse_unit(unit dto.ExpirationUnit) time.Duration {
 	switch unit {
-	case "day":
+	case "day", "d":
 		return 24 * time.Hour
-	case "hour":
+	case "hour", "h":
 		return time.Hour
-	case "minute":
+	case "minute", "m":
 		return time.Minute
 	}
 

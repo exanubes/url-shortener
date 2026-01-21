@@ -8,22 +8,21 @@ func NewFactory() ExpirationFactory {
 	return ExpirationFactory{}
 }
 
-func (factory ExpirationFactory) Create(settings domain.PolicySettings) (domain.ExpirationPolicy, error) {
-	var policies []domain.ExpirationPolicy
+func (factory ExpirationFactory) Create(settings domain.PolicySettings) []domain.PolicySpec {
+	var policies []domain.PolicySpec
 
 	if settings.HasMaxAgeLimit() {
-		policy, err := domain.NewMaxLinkAgeExpirationPolicy(settings.MaxAge)
-
-		if err != nil {
-			return policy, err
-		}
-
-		policies = append(policies, policy)
+		policies = append(policies, domain.PolicySpec{
+			Kind:   domain.PolicyKind_MaxAge,
+			Params: map[string]any{"duration": settings.MaxAge},
+		})
 	}
 
 	if settings.IsSingleUse() {
-		policies = append(policies, domain.NewOneTimeLinkExpirationPolicy())
+		policies = append(policies, domain.PolicySpec{
+			Kind: domain.PolicyKind_SingleUse,
+		})
 	}
 
-	return domain.NewChainExpirationPolicy(policies)
+	return policies
 }

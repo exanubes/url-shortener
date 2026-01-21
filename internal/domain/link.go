@@ -4,52 +4,48 @@ import (
 	"time"
 )
 
-type LinkUsage int
-
-const (
-	LinkUsage_Multi LinkUsage = iota
-	LinkUsage_Single
-)
-
 type LinkState struct {
-	Url        Url
-	Shortcode  ShortCode
-	Policy     ExpirationPolicy
-	CreatedAt  time.Time
-	ConsumedAt time.Time
-	Usage      LinkUsage
+	Url         Url
+	Shortcode   ShortCode
+	PolicySpecs []PolicySpec
+	CreatedAt   time.Time
+	ConsumedAt  time.Time
 }
 
 type Link struct {
-	url         Url
-	shortcode   ShortCode
-	policy      ExpirationPolicy
-	created_at  time.Time
-	consumed_at time.Time
-	usage       LinkUsage
+	url          Url
+	shortcode    ShortCode
+	policy_specs []PolicySpec
+	created_at   time.Time
+	consumed_at  time.Time
 }
 
 func RehydrateLink(state LinkState) *Link {
-	return new_link(state.Url, state.Shortcode, state.Policy, state.CreatedAt, state.ConsumedAt, state.Usage)
+	return new_link(state.Url, state.Shortcode, state.PolicySpecs, state.CreatedAt, state.ConsumedAt)
 }
 
-func CreateLink(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, usage LinkUsage) *Link {
-	return new_link(url, shortcode, policy, created_at, time.Time{}, usage)
+func CreateLink(url Url, shortcode ShortCode, policy_specs []PolicySpec, created_at time.Time) *Link {
+	return new_link(url, shortcode, policy_specs, created_at, time.Time{})
 }
 
-func new_link(url Url, shortcode ShortCode, policy ExpirationPolicy, created_at time.Time, consumed_at time.Time, usage LinkUsage) *Link {
+func new_link(url Url, shortcode ShortCode, policy_specs []PolicySpec, created_at time.Time, consumed_at time.Time) *Link {
 	return &Link{
-		url:         url,
-		shortcode:   shortcode,
-		policy:      policy,
-		created_at:  created_at,
-		consumed_at: consumed_at,
-		usage:       usage,
+		url:          url,
+		shortcode:    shortcode,
+		policy_specs: policy_specs,
+		created_at:   created_at,
+		consumed_at:  consumed_at,
 	}
 }
 
 func (link *Link) Visit(now time.Time) (Url, error) {
-	expired := link.policy.Expired(ExpirationContext{
+	policy, err := link.policy()
+
+	if err != nil {
+		return Url{}, err
+	}
+
+	expired := policy.Expired(ExpirationContext{
 		CreatedAt:  link.created_at,
 		Now:        now,
 		ConsumedAt: link.consumed_at,
@@ -72,15 +68,35 @@ func (link Link) ShortCode() ShortCode {
 
 func (link *Link) Snapshot() LinkState {
 	return LinkState{
-		Url:        link.url,
-		Shortcode:  link.shortcode,
-		Policy:     link.policy,
-		CreatedAt:  link.created_at,
-		ConsumedAt: link.consumed_at,
-		Usage:      link.usage,
+		Url:         link.url,
+		Shortcode:   link.shortcode,
+		PolicySpecs: link.policy_specs,
+		CreatedAt:   link.created_at,
+		ConsumedAt:  link.consumed_at,
 	}
 }
 
 func (link *Link) SingleUse() bool {
-	return link.usage == LinkUsage_Single
+	for _, spec := range link.policy_specs {
+		if spec.Kind == PolicyKind_SingleUse {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (link *Link) policy() (ExpirationPolicy, error) {
+	policies := make([]ExpirationPolicy, len(link.policy_specs))
+
+	for index, spec := range link.policy_specs {
+		policy, err := build_expiration_policy(spec)
+		if err != nil {
+			return nil, err
+		}
+
+		policies[index] = policy
+	}
+
+	return NewChainExpirationPolicy(policies)
 }

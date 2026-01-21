@@ -17,4 +17,6 @@ var (
 	ErrExceededMinAge            = errors.New("Exceeded min age")
 	ErrExceededMaxAge            = errors.New("Exceeded max age")
 	ErrUndefinedExpirationPolicy = errors.New("Undefined expiration policy")
+	ErrInvalidPolicySpecParams   = errors.New("Invalid policy spec params")
+	ErrUnsupportedPolicyKind     = errors.New("Unsupported policy kind")
 )

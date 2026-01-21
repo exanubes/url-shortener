@@ -4,12 +4,22 @@ import (
 	"time"
 )
 
-const max_visits_limit = 100
+type PolicyKind string
+
+const (
+	PolicyKind_SingleUse = "single_use"
+	PolicyKind_MaxAge    = "max_age"
+)
+
+type PolicySpec struct {
+	Kind   PolicyKind
+	Params map[string]any
+}
 
 type PolicySettings struct {
 	MaxAge     time.Duration
 	ConsumedAt time.Time
-	Usage      LinkUsage
+	SingleUse  bool
 }
 
 func (settings PolicySettings) HasMaxAgeLimit() bool {
@@ -17,18 +27,10 @@ func (settings PolicySettings) HasMaxAgeLimit() bool {
 }
 
 func (settings PolicySettings) IsSingleUse() bool {
-	return settings.Usage == LinkUsage_Single
+	return settings.SingleUse
 }
 
-func NewPolicySettings(max_visits int, max_age time.Duration, usage LinkUsage) (PolicySettings, error) {
-	if max_visits < 0 {
-		return PolicySettings{}, ErrExceededMinVisits
-	}
-
-	if max_visits > max_visits_limit {
-		return PolicySettings{}, ErrExceededMaxVisits
-	}
-
+func NewPolicySettings(max_age time.Duration, single_use bool) (PolicySettings, error) {
 	if max_age < time.Minute {
 		return PolicySettings{}, ErrExceededMinAge
 	}
@@ -37,7 +39,8 @@ func NewPolicySettings(max_visits int, max_age time.Duration, usage LinkUsage) (
 	if max_age > year {
 		return PolicySettings{}, ErrExceededMaxAge
 	}
-	return PolicySettings{MaxAge: max_age, Usage: usage}, nil
+
+	return PolicySettings{MaxAge: max_age, SingleUse: single_use}, nil
 }
 
 type ExpirationPolicy interface {
@@ -101,4 +104,27 @@ func (policy ChainExpirationPolicy) Expired(context ExpirationContext) bool {
 	}
 
 	return false
+}
+
+func build_expiration_policy(spec PolicySpec) (ExpirationPolicy, error) {
+	switch spec.Kind {
+	case PolicyKind_SingleUse:
+		return NewOneTimeLinkExpirationPolicy(), nil
+
+	case PolicyKind_MaxAge:
+		duration, exists := spec.Params["duration"]
+		if !exists {
+			return nil, ErrInvalidPolicySpecParams
+		}
+
+		max_age_duration, ok := duration.(time.Duration)
+
+		if !ok {
+			return nil, ErrInvalidPolicySpecParams
+		}
+
+		return NewMaxLinkAgeExpirationPolicy(max_age_duration)
+	}
+
+	return nil, ErrUnsupportedPolicyKind
 }

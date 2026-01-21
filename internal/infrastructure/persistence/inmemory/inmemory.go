@@ -14,7 +14,8 @@ type Repository struct {
 
 func NewInmemoryRepository() *Repository {
 	return &Repository{
-		links: make(map[string]domain.LinkState),
+		links:  make(map[string]domain.LinkState),
+		visits: make(map[string][]analytics),
 	}
 }
 
@@ -56,7 +57,7 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 		return err
 	}
 
-	if link_state.Usage == domain.LinkUsage_Single && link_state.ConsumedAt.IsZero() {
+	if link_state.ConsumedAt.IsZero() {
 		link_state.ConsumedAt = time.Now()
 		repository.links[input.String()] = link_state
 		return nil
