@@ -16,18 +16,28 @@ SELECT
     l.url,
     l.created_at,
     l.consumed_at,
-    lp.kind,
-    lp.config
+    JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'kind', lp.kind, 
+            'config', lp.config
+        )
+    ) AS policies
 FROM links l
 INNER JOIN link_policies lp ON l.id = lp.link_id
-WHERE l.id = $1;
+WHERE l.id = $1
+GROUP BY 
+    l.id, 
+    l.url, 
+    l.created_at, 
+    l.consumed_at;
+
 
 -- name: CheckShortCodeExists :one
 SELECT EXISTS(SELECT 1 FROM links WHERE id = $1);
 
 -- name: ConsumeSingleUseLink :exec
 UPDATE links
-SET consumed_at = $2
+SET consumed_at = NOW()
 WHERE id = $1 AND consumed_at IS NULL
 RETURNING 1;
 

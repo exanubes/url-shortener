@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS link_policies (
     link_id VARCHAR(11) NOT NULL REFERENCES links(id) ON DELETE CASCADE,
     kind TEXT NOT NULL,
     config JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 
     CONSTRAINT kind CHECK(kind IN ('max_age', 'single_use'))
 );
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS link_policies (
 -- Link analytics table: Link tracking data
 CREATE TABLE IF NOT EXISTS link_visits (
     id BIGSERIAL PRIMARY KEY,
-    link_id VARCHAR(11) REFERENCES links(id) ON DELETE CASCADE,
+    link_id VARCHAR(11) NOT NULL REFERENCES links(id) ON DELETE CASCADE,
     visited_at TIMESTAMPTZ NOT NULL,
     ip_address INET
 );

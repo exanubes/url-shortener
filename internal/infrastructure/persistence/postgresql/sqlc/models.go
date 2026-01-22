@@ -28,8 +28,8 @@ type LinkPolicy struct {
 }
 
 type LinkVisit struct {
-	ID        int64          `json:"id"`
-	LinkID    sql.NullString `json:"link_id"`
-	VisitedAt time.Time      `json:"visited_at"`
-	IpAddress pqtype.Inet    `json:"ip_address"`
+	ID        int64       `json:"id"`
+	LinkID    string      `json:"link_id"`
+	VisitedAt time.Time   `json:"visited_at"`
+	IpAddress pqtype.Inet `json:"ip_address"`
 }

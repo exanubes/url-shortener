@@ -27,18 +27,13 @@ func (q *Queries) CheckShortCodeExists(ctx context.Context, id string) (bool, er
 
 const consumeSingleUseLink = `-- name: ConsumeSingleUseLink :exec
 UPDATE links
-SET consumed_at = $2
+SET consumed_at = NOW()
 WHERE id = $1 AND consumed_at IS NULL
 RETURNING 1
 `
 
-type ConsumeSingleUseLinkParams struct {
-	ID         string       `json:"id"`
-	ConsumedAt sql.NullTime `json:"consumed_at"`
-}
-
-func (q *Queries) ConsumeSingleUseLink(ctx context.Context, arg ConsumeSingleUseLinkParams) error {
-	_, err := q.db.ExecContext(ctx, consumeSingleUseLink, arg.ID, arg.ConsumedAt)
+func (q *Queries) ConsumeSingleUseLink(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, consumeSingleUseLink, id)
 	return err
 }
 
@@ -80,11 +75,20 @@ SELECT
     l.url,
     l.created_at,
     l.consumed_at,
-    lp.kind,
-    lp.config
+    JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'kind', lp.kind, 
+            'config', lp.config
+        )
+    ) AS policies
 FROM links l
 INNER JOIN link_policies lp ON l.id = lp.link_id
 WHERE l.id = $1
+GROUP BY 
+    l.id, 
+    l.url, 
+    l.created_at, 
+    l.consumed_at
 `
 
 type GetLinkRow struct {
@@ -92,8 +96,7 @@ type GetLinkRow struct {
 	Url        string          `json:"url"`
 	CreatedAt  time.Time       `json:"created_at"`
 	ConsumedAt sql.NullTime    `json:"consumed_at"`
-	Kind       string          `json:"kind"`
-	Config     json.RawMessage `json:"config"`
+	Policies   json.RawMessage `json:"policies"`
 }
 
 func (q *Queries) GetLink(ctx context.Context, id string) (GetLinkRow, error) {
@@ -104,8 +107,7 @@ func (q *Queries) GetLink(ctx context.Context, id string) (GetLinkRow, error) {
 		&i.Url,
 		&i.CreatedAt,
 		&i.ConsumedAt,
-		&i.Kind,
-		&i.Config,
+		&i.Policies,
 	)
 	return i, err
 }
@@ -116,9 +118,9 @@ VALUES($1, $2, $3)
 `
 
 type LogLinkVisitParams struct {
-	LinkID    sql.NullString `json:"link_id"`
-	VisitedAt time.Time      `json:"visited_at"`
-	IpAddress pqtype.Inet    `json:"ip_address"`
+	LinkID    string      `json:"link_id"`
+	VisitedAt time.Time   `json:"visited_at"`
+	IpAddress pqtype.Inet `json:"ip_address"`
 }
 
 func (q *Queries) LogLinkVisit(ctx context.Context, arg LogLinkVisitParams) error {
