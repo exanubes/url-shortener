@@ -13,8 +13,22 @@ const (
 
 type PolicySpec struct {
 	Kind   PolicyKind
-	Params map[string]any
+	Params PolicyParams
 }
+
+type PolicyParams interface {
+	policy_params()
+}
+
+type SingleUseParams struct{}
+
+func (SingleUseParams) policy_params() {}
+
+type MaxAgeParams struct {
+	TTL time.Duration
+}
+
+func (MaxAgeParams) policy_params() {}
 
 type PolicySettings struct {
 	MaxAge     time.Duration
@@ -107,23 +121,20 @@ func (policy ChainExpirationPolicy) Expired(context ExpirationContext) bool {
 }
 
 func build_expiration_policy(spec PolicySpec) (ExpirationPolicy, error) {
-	switch spec.Kind {
-	case PolicyKind_SingleUse:
+	switch params := spec.Params.(type) {
+	case SingleUseParams:
+		if spec.Kind != PolicyKind_SingleUse {
+			return nil, ErrInvalidPolicySpecParams
+		}
+
 		return NewOneTimeLinkExpirationPolicy(), nil
 
-	case PolicyKind_MaxAge:
-		duration, exists := spec.Params["duration"]
-		if !exists {
+	case MaxAgeParams:
+		if spec.Kind != PolicyKind_MaxAge {
 			return nil, ErrInvalidPolicySpecParams
 		}
 
-		max_age_duration, ok := duration.(time.Duration)
-
-		if !ok {
-			return nil, ErrInvalidPolicySpecParams
-		}
-
-		return NewMaxLinkAgeExpirationPolicy(max_age_duration)
+		return NewMaxLinkAgeExpirationPolicy(params.TTL)
 	}
 
 	return nil, ErrUnsupportedPolicyKind

@@ -14,21 +14,21 @@ type CreateShortUrl struct {
 	writer             LinkWriter
 	short_code_service shortcode.Service
 	policy_factory     RetryPolicyFactory
-	expiration         expiration.Factory
+	expiration_factory expiration.Factory
 }
 
-func New(writer LinkWriter, short_code_service shortcode.Service, policy_factory RetryPolicyFactory, expiration expiration.Factory) *CreateShortUrl {
+func New(writer LinkWriter, short_code_service shortcode.Service, policy_factory RetryPolicyFactory, expiration_factory expiration.Factory) *CreateShortUrl {
 	return &CreateShortUrl{
 		writer:             writer,
 		short_code_service: short_code_service,
 		policy_factory:     policy_factory,
-		expiration:         expiration,
+		expiration_factory: expiration_factory,
 	}
 }
 
 func (usecase *CreateShortUrl) Execute(ctx context.Context, cmd domain.CreateLinkCommand) (*domain.Link, error) {
 	retry_policy := usecase.policy_factory.Create()
-	policy_specs := usecase.expiration.Create(cmd.PolicySettings)
+	policy_specs := usecase.expiration_factory.Create(cmd.PolicySettings)
 
 	for retry_policy.Next() {
 		short_code, err := usecase.short_code_service.Generate()

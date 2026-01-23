@@ -62,9 +62,9 @@ func (repository *Repository) Write(ctx context.Context, link *domain.Link) erro
 	for _, policy := range snapshot.PolicySpecs {
 		var err error
 		var config json.RawMessage
-
-		if policy.Params != nil {
-			config, err = json.Marshal(policy.Params)
+		params := convert_params_to_dto(policy.Params)
+		if params != nil {
+			config, err = json.Marshal(params)
 			if err != nil {
 				return err
 			}
@@ -160,35 +160,22 @@ func deserializePolicySpecs(policiesJSON json.RawMessage) ([]domain.PolicySpec, 
 	specs := make([]domain.PolicySpec, 0, len(policies))
 
 	for _, p := range policies {
-		switch p.Kind {
-		case string(domain.PolicyKind_SingleUse):
+		switch domain.PolicyKind(p.Kind) {
+		case domain.PolicyKind_SingleUse:
 			specs = append(specs, domain.PolicySpec{
 				Kind:   domain.PolicyKind_SingleUse,
-				Params: nil,
+				Params: domain.SingleUseParams{},
 			})
 
-		case string(domain.PolicyKind_MaxAge):
-			var config_map map[string]any
-			if err := json.Unmarshal(p.Config, &config_map); err != nil {
+		case domain.PolicyKind_MaxAge:
+			var config max_age_params_dto
+			if err := json.Unmarshal(p.Config, &config); err != nil {
 				return nil, err
 			}
 
-			duration_value, ok := config_map["duration"]
-			if !ok {
-				return nil, domain.ErrInvalidPolicySpecParams
-			}
-
-			// NOTE: JSON unmarshals numbers as float64 (stored as float64 from JSON number when marshalling PolicySpec.Params)
-			duration_nanos, ok := duration_value.(float64)
-			if !ok {
-				return nil, domain.ErrInvalidPolicySpecParams
-			}
-
 			specs = append(specs, domain.PolicySpec{
-				Kind: domain.PolicyKind_MaxAge,
-				Params: map[string]any{
-					"duration": time.Duration(duration_nanos),
-				},
+				Kind:   domain.PolicyKind_MaxAge,
+				Params: domain.MaxAgeParams{TTL: config.DurationNanoseconds},
 			})
 
 		default:

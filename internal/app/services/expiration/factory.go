@@ -14,13 +14,14 @@ func (factory ExpirationFactory) Create(settings domain.PolicySettings) []domain
 	if settings.HasMaxAgeLimit() {
 		policies = append(policies, domain.PolicySpec{
 			Kind:   domain.PolicyKind_MaxAge,
-			Params: map[string]any{"duration": settings.MaxAge},
+			Params: domain.MaxAgeParams{TTL: settings.MaxAge},
 		})
 	}
 
 	if settings.IsSingleUse() {
 		policies = append(policies, domain.PolicySpec{
-			Kind: domain.PolicyKind_SingleUse,
+			Kind:   domain.PolicyKind_SingleUse,
+			Params: domain.SingleUseParams{},
 		})
 	}
 
