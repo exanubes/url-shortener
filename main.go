@@ -19,7 +19,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	db_client, err := postgresql.NewClient(ctx, "")
+	db_client, err := postgresql.NewClient(ctx, "postgresql://admin:admin@localhost:5432/url_shortener")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,8 +32,8 @@ func main() {
 	policy_factory := createshorturl.NewRetryPolicyFactory(3)
 	expiration_factory := expiration.NewFactory()
 	shortcodes_service := shortcode.NewService(token_generator, encoder)
-	create_short_url_use_case := createshorturl.New(provider, shortcodes_service, policy_factory, expiration_factory)
-	visit_url_use_case := visitshorturl.New(provider, provider, event_bus)
+	create_short_url_use_case := createshorturl.New(database, shortcodes_service, policy_factory, expiration_factory)
+	visit_url_use_case := visitshorturl.New(database, database, event_bus)
 
 	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
 	event_bus.Start(ctx)
