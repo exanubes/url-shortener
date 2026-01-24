@@ -20,19 +20,27 @@ func new_queries(db *dynamodb.Client) *queries {
 	return &queries{db: db, table_name: "url_shortener"}
 }
 
-var get_link_condition = "pk = :pk and sk = :sk"
+var get_link_condition = "#pk = :pk and #sk = :sk"
 
 func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, error) {
 	primary_key := internal.CreateLinkMetaPartitionKey(id)
 	marshalled_key, err := attributevalue.MarshalMap(primary_key)
+
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := q.db.Query(ctx, &dynamodb.QueryInput{
-		TableName:                 &q.table_name,
-		KeyConditionExpression:    &get_link_condition,
-		ExpressionAttributeValues: marshalled_key,
+		TableName:              &q.table_name,
+		KeyConditionExpression: &get_link_condition,
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": marshalled_key["PK"],
+			":sk": marshalled_key["SK"],
+		},
+		ExpressionAttributeNames: map[string]string{
+			"#pk": "PK",
+			"#sk": "SK",
+		},
 	})
 
 	if err != nil {
@@ -65,12 +73,17 @@ func (q *queries) CreateLink(ctx context.Context, input internal.LinkRow) error 
 		return err
 	}
 
-	q.db.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: &q.table_name,
-		Item:      item,
+	if input.ConsumedAt.IsZero() {
+		delete(item, "consumed_at")
+	}
+
+	_, err = q.db.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName:           &q.table_name,
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
 	})
 
-	return nil
+	return err
 }
 func (q *queries) ConsumeSingleUseLink(ctx context.Context, input internal.ConsumeSingleUseLinkParams) error {
 	primary_key := internal.CreateLinkMetaPartitionKey(input.Shortcode)

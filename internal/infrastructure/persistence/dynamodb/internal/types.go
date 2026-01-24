@@ -1,28 +1,36 @@
 package internal
 
 import (
+	"encoding/json"
 	"time"
-
-	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type LinkRow struct {
-	PK          string              `dynamodbav:"PK"`
-	SK          string              `dynamodbav:"SK"`
-	Url         string              `dynamodbav:"Url"`
-	Shortcode   string              `dynamodbav:"Shortcode"`
-	PolicySpecs []domain.PolicySpec `dynamodbav:"PolicySpecs"`
-	CreatedAt   time.Time           `dynamodbav:"CreatedAt"`
-	ConsumedAt  time.Time           `dynamodbav:"ConsumedAt,omitempty"`
-	Version     int                 `dynamodbav:"Version"`
+	PK          string          `dynamodbav:"PK"`
+	SK          string          `dynamodbav:"SK"`
+	Url         string          `dynamodbav:"url"`
+	Shortcode   string          `dynamodbav:"shortcode"`
+	PolicySpecs []PolicySpecDto `dynamodbav:"policy_specs"`
+	CreatedAt   time.Time       `dynamodbav:"created_at"`
+	ConsumedAt  time.Time       `dynamodbav:"consumed_at,omitempty"`
+	Version     string          `dynamodbav:"version"`
 }
 
 type ConsumeSingleUseLinkParams struct {
-	Shortcode  string    `dynamodbav:"Shortcode"`
-	ConsumedAt time.Time `dynamodbav:"ConsumedAt,omitempty"`
+	Shortcode  string    `dynamodbav:"shortcode"`
+	ConsumedAt time.Time `dynamodbav:"consumed_at,omitempty"`
 }
 
 type PrimaryKey struct {
 	PK string `dynamodbav:"PK"`
-	SK string `dynamodbav:"PK"`
+	SK string `dynamodbav:"SK"`
+}
+
+type PolicySpecDto struct {
+	Kind   string          `dynamodbav:"kind"`
+	Config json.RawMessage `dynamodbav:"config"`
+}
+
+type MaxAgeParamsDto struct {
+	DurationNanoseconds time.Duration `json:"duration_nanoseconds"`
 }
