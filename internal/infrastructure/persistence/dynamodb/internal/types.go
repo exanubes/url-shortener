@@ -21,6 +21,11 @@ type ConsumeSingleUseLinkParams struct {
 	ConsumedAt time.Time `dynamodbav:"consumed_at,omitempty"`
 }
 
+type LogLinkVisitParams struct {
+	Shortcode string    `dynamodbav:"shortcode"`
+	VisitedAt time.Time `dynamodbav:"visited_at,omitempty"`
+}
+
 type PrimaryKey struct {
 	PK string `dynamodbav:"PK"`
 	SK string `dynamodbav:"SK"`

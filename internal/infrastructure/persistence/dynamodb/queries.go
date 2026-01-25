@@ -61,7 +61,9 @@ func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, er
 }
 
 // TODO:
-func (q *queries) LogLinkVisit(ctx context.Context) {}
+func (q *queries) LogLinkVisit(ctx context.Context, input internal.LogLinkVisitParams) {
+	buckets := internal.CreateLinkVisitBucketPartitionKeys(input.Shortcode, input.VisitedAt)
+}
 
 func (q *queries) CreateLink(ctx context.Context, input internal.LinkRow) error {
 	primary_key := internal.CreateLinkMetaPartitionKey(input.Shortcode)

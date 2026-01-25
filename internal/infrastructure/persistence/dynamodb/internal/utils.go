@@ -3,9 +3,33 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/exanubes/url-shortener/internal/domain"
 )
+
+var buckets = map[string]string{"HOUR": "2006-01-02T03", "DAY": "2006-01-02", "MONTH": "2006-01", "YEAR": "2006"}
+
+func CreateLinkVisitBucketPartitionKeys(id string, visited_at time.Time) []PrimaryKey {
+	pk := fmt.Sprintf("LINK#%s", id)
+	var keys []PrimaryKey
+
+	for bucket, layout := range buckets {
+		keys = append(keys, PrimaryKey{
+			PK: pk,
+			SK: fmt.Sprintf("%s#%s", bucket, visited_at.Format(layout)),
+		})
+	}
+
+	return keys
+}
+
+func CreateLinkVisitPartitionKey(id string, visited_at time.Time) PrimaryKey {
+	pk := fmt.Sprintf("LINK#%s", id)
+	sk := fmt.Sprintf("VISIT#%d", visited_at.UnixNano())
+
+	return PrimaryKey{PK: pk, SK: sk}
+}
 
 func CreateLinkMetaPartitionKey(id string) PrimaryKey {
 	pk := fmt.Sprintf("LINK#%s", id)
@@ -66,4 +90,9 @@ func DeserializePolicies(policies []PolicySpecDto) ([]domain.PolicySpec, error) 
 	}
 
 	return specs, nil
+}
+
+// Pads digits with a zero to keep lexographical order
+func pad_num_zero(input int) string {
+	return fmt.Sprintf("%02d", input)
 }
