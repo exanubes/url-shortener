@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"net"
 	"time"
 )
 
@@ -22,8 +23,9 @@ type ConsumeSingleUseLinkParams struct {
 }
 
 type LogLinkVisitParams struct {
-	Shortcode string    `dynamodbav:"shortcode"`
-	VisitedAt time.Time `dynamodbav:"visited_at,omitempty"`
+	Shortcode string
+	VisitedAt time.Time
+	IpAddress net.IP
 }
 
 type PrimaryKey struct {
@@ -38,4 +40,11 @@ type PolicySpecDto struct {
 
 type MaxAgeParamsDto struct {
 	DurationNanoseconds time.Duration `json:"duration_nanoseconds"`
+}
+
+type LogLinkVisitRow struct {
+	PK        string    `dynamodbav:"PK"`
+	SK        string    `dynamodbav:"SK"`
+	VisitedAt time.Time `dynamodbav:"visited_at"`
+	IpAddress net.IP    `dynamodbav:"ip_address,omitempty"`
 }

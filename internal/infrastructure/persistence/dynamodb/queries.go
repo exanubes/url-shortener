@@ -20,8 +20,6 @@ func new_queries(db *dynamodb.Client) *queries {
 	return &queries{db: db, table_name: "url_shortener"}
 }
 
-var get_link_condition = "#pk = :pk and #sk = :sk"
-
 func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, error) {
 	primary_key := internal.CreateLinkMetaPartitionKey(id)
 	marshalled_key, err := attributevalue.MarshalMap(primary_key)
@@ -32,7 +30,7 @@ func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, er
 
 	result, err := q.db.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &q.table_name,
-		KeyConditionExpression: &get_link_condition,
+		KeyConditionExpression: aws.String("#pk = :pk and #sk = :sk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": marshalled_key["PK"],
 			":sk": marshalled_key["SK"],
@@ -61,8 +59,40 @@ func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, er
 }
 
 // TODO:
-func (q *queries) LogLinkVisit(ctx context.Context, input internal.LogLinkVisitParams) {
-	buckets := internal.CreateLinkVisitBucketPartitionKeys(input.Shortcode, input.VisitedAt)
+func (q *queries) LogLinkVisit(ctx context.Context, input internal.LogLinkVisitParams) error {
+	visit_partition := internal.CreateLinkVisitPartitionKey(input.Shortcode, input.VisitedAt)
+	row := internal.LogLinkVisitRow{
+		PK:        visit_partition.PK,
+		SK:        visit_partition.SK,
+		VisitedAt: input.VisitedAt,
+		IpAddress: input.IpAddress,
+	}
+
+	visit_row, err := attributevalue.MarshalMap(row)
+
+	if err != nil {
+		return err
+	}
+
+	bucket_updates, err := q.create_bucket_updates(input.Shortcode, input.VisitedAt)
+
+	if err != nil {
+		return err
+	}
+
+	visit_events := []types.TransactWriteItem{{
+		Put: &types.Put{
+			TableName: &q.table_name,
+			Item:      visit_row,
+		}},
+	}
+
+	_, err = q.db.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: append(visit_events, bucket_updates...),
+	})
+
+	return err
+
 }
 
 func (q *queries) CreateLink(ctx context.Context, input internal.LinkRow) error {
@@ -110,4 +140,34 @@ func (q *queries) ConsumeSingleUseLink(ctx context.Context, input internal.Consu
 	})
 
 	return err
+}
+
+func (q *queries) create_bucket_updates(shortcode string, visited_at time.Time) ([]types.TransactWriteItem, error) {
+	buckets := internal.CreateLinkVisitBucketPartitionKeys(shortcode, visited_at)
+
+	bucket_updates := make([]types.TransactWriteItem, len(buckets))
+
+	for index, bucket := range buckets {
+		bucket_key, err := attributevalue.MarshalMap(bucket)
+
+		if err != nil {
+			return nil, err
+		}
+		bucket_updates[index] = types.TransactWriteItem{
+			Update: &types.Update{
+				TableName:        &q.table_name,
+				Key:              bucket_key,
+				UpdateExpression: aws.String("SET #c = if_not_exists(#c, :zero) + :inc"),
+				ExpressionAttributeNames: map[string]string{
+					"#c": "count",
+				},
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":zero": &types.AttributeValueMemberN{Value: "0"},
+					":inc":  &types.AttributeValueMemberN{Value: "1"},
+				},
+			},
+		}
+	}
+
+	return bucket_updates, nil
 }
