@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,7 +12,7 @@ import (
 
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
 	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
-	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes"
+	"github.com/exanubes/url-shortener/internal/infrastructure/api"
 )
 
 type HttpConfig struct {
@@ -90,7 +91,17 @@ func (driver *HttpDriver) Run(ctx context.Context, config HttpConfig) error {
 
 func (driver *HttpDriver) setup_routes(request_timeout time.Duration) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("POST /", routes.NewCreateUrlRoute(request_timeout, driver.create_url))
-	mux.Handle("GET /{short_url}", routes.NewVisitUrlRoute(request_timeout, driver.visit_url))
+	mux.Handle("POST /", new_create_url_route(request_timeout, driver.create_url))
+	mux.Handle("GET /{short_code}", new_resolve_url_route(request_timeout, driver.visit_url))
 	return mux
+}
+
+func WriteError(response http.ResponseWriter, status_code int, err_code, message string) {
+	response.Header().Set("Content-Type", "application/json")
+	response.WriteHeader(status_code)
+	json.NewEncoder(response).Encode(api.ErrorResponse{
+		Error:   http.StatusText(status_code),
+		Message: message,
+		Code:    err_code,
+	})
 }

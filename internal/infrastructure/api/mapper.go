@@ -1,14 +1,13 @@
-package mapper
+package api
 
 import (
 	"errors"
 	"time"
 
 	"github.com/exanubes/url-shortener/internal/domain"
-	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/dto"
 )
 
-func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand, error) {
+func ToCreateLinkCommand(payload CreateUrlRequest) (domain.CreateLinkCommand, error) {
 	if payload.Url == "" {
 		return domain.CreateLinkCommand{}, errors.New("Url cannot be empty")
 	}
@@ -43,7 +42,7 @@ func ToCreateLinkCommand(payload dto.CreateUrlRequest) (domain.CreateLinkCommand
 	}, nil
 }
 
-func parse_unit(unit dto.ExpirationUnit) time.Duration {
+func parse_unit(unit ExpirationUnit) time.Duration {
 	switch unit {
 	case "day", "d":
 		return 24 * time.Hour

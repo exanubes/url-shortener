@@ -10,9 +10,9 @@ import (
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
 	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
 	"github.com/exanubes/url-shortener/internal/domain"
+	"github.com/exanubes/url-shortener/internal/infrastructure/api/http"
 	encoding "github.com/exanubes/url-shortener/internal/infrastructure/encoding/base_62"
 	"github.com/exanubes/url-shortener/internal/infrastructure/event"
-	"github.com/exanubes/url-shortener/internal/infrastructure/http"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/dynamodb"
 	// "github.com/exanubes/url-shortener/internal/infrastructure/persistence/postgresql"
 )

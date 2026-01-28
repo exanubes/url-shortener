@@ -1,4 +1,4 @@
-package routes
+package http
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 	"time"
 
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
-	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/dto"
-	"github.com/exanubes/url-shortener/internal/infrastructure/http/routes/mapper"
+	"github.com/exanubes/url-shortener/internal/infrastructure/api"
 )
 
 type CreateUrlRoute struct {
@@ -16,33 +15,33 @@ type CreateUrlRoute struct {
 	request_timeout time.Duration
 }
 
-func NewCreateUrlRoute(request_timeout time.Duration, usecase createshorturl.UseCase) *CreateUrlRoute {
+func new_create_url_route(request_timeout time.Duration, usecase createshorturl.UseCase) *CreateUrlRoute {
 	return &CreateUrlRoute{usecase, request_timeout}
 }
 
 func (route *CreateUrlRoute) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	ctx, cancel := context.WithTimeout(request.Context(), route.request_timeout)
 	defer cancel()
-	var payload dto.CreateUrlRequest
+	var payload api.CreateUrlRequest
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
-		dto.WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
+		WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 		return
 	}
-	command, err := mapper.ToCreateLinkCommand(payload)
+	command, err := api.ToCreateLinkCommand(payload)
 	if err != nil {
-		dto.WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
+		WriteError(response, http.StatusBadRequest, "INVALID_PAYLOAD", err.Error())
 	}
 
 	link, err := route.usecase.Execute(ctx, command)
 
 	if err != nil {
-		dto.WriteError(response, http.StatusInternalServerError, "", err.Error())
+		WriteError(response, http.StatusInternalServerError, "", err.Error())
 		return
 	}
 
 	response.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(response).Encode(dto.CreateUrlResponse{
+	json.NewEncoder(response).Encode(api.CreateUrlResponse{
 		ShortUrl: link.ShortCode().String(),
 	})
 }
