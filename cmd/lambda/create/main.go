@@ -2,35 +2,33 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
+	"log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/exanubes/url-shortener/internal/app/services/expiration"
+	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
+	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
+	"github.com/exanubes/url-shortener/internal/infrastructure/api/lambda/create"
+	encoding "github.com/exanubes/url-shortener/internal/infrastructure/encoding/base_62"
+	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/dynamodb"
 )
 
-type Response struct {
-	Message string `json:"message"`
-}
-
-func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-	body, err := json.Marshal(Response{
-		Message: "Hello World!",
-	})
-
-	if err != nil {
-		return events.APIGatewayV2HTTPResponse{}, err
-	}
-
-	return events.APIGatewayV2HTTPResponse{
-		StatusCode: http.StatusOK,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: string(body),
-	}, nil
-}
-
 func main() {
-	lambda.Start(handler)
+	ctx := context.Background()
+	client, err := dynamodb.NewClient(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	table := dynamodb.NewRepository(client)
+	token_generator := shortcode.NewGenerator(int64(7))
+	policy_factory := createshorturl.NewRetryPolicyFactory(3)
+	expiration_factory := expiration.NewFactory()
+	encoder := encoding.New()
+	shortcodes_service := shortcode.NewService(token_generator, encoder)
+	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory)
+	handler := create.NewHandler(create_short_url_use_case)
+	lambda.StartWithOptions(func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+		return handler.Handle(ctx, req), nil
+	}, lambda.WithContext(ctx))
 }

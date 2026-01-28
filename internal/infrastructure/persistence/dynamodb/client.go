@@ -26,7 +26,6 @@ func NewClient(ctx context.Context) (*client, error) {
 }
 
 func NewLocalStackClient(ctx context.Context) (*client, error) {
-	// Hardcoded LocalStack configuration
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		return aws.Endpoint{
 			URL:               "http://localhost:4566",
@@ -38,9 +37,9 @@ func NewLocalStackClient(ctx context.Context) (*client, error) {
 		config.WithRegion("us-east-1"),
 		config.WithEndpointResolverWithOptions(customResolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-			"test", // Access Key ID
-			"test", // Secret Access Key
-			"",     // Session Token (empty)
+			"test",
+			"test",
+			"",
 		)),
 	)
 
