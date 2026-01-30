@@ -22,6 +22,7 @@ func main() {
 	}
 	table := dynamodb.NewRepository(client)
 	processor := analytics.NewLinkVisitedProcessor(table)
+	//TODO: implement EventPublisher with sqs
 	event_bus := event.NewBus(func(event domain.LinkVisited) error { return processor.Handler(event) })
 	visit_url_use_case := visitshorturl.New(table, table, event_bus)
 	handler := resolve.NewHandler(visit_url_use_case)
