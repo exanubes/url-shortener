@@ -19,5 +19,5 @@ type UseCase interface {
 }
 
 type EventPublisher interface {
-	Publish(domain.LinkVisited) bool
+	Publish(context.Context, domain.LinkVisited) error
 }

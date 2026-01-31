@@ -19,15 +19,14 @@ func NewBus(handler func(domain.LinkVisited) error) *Bus {
 	}
 }
 
-func (bus *Bus) Publish(event domain.LinkVisited) bool {
+func (bus *Bus) Publish(ctx context.Context, event domain.LinkVisited) error {
 	select {
 	case bus.events <- event:
 	default:
-		fmt.Println("Channel is full")
-		return false
+		return fmt.Errorf("Channel is full")
 	}
 
-	return true
+	return nil
 }
 
 func (bus *Bus) Start(ctx context.Context) {

@@ -40,7 +40,7 @@ func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.Shor
 		}
 	}
 
-	usecase.publisher.Publish(domain.LinkVisited{
+	usecase.publisher.Publish(ctx, domain.LinkVisited{
 		ShortCode: short_url.String(),
 		VisitedAt: now,
 	})

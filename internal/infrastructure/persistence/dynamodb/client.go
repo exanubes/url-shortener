@@ -15,7 +15,6 @@ type client struct {
 
 func NewClient(ctx context.Context) (*client, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
-
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,6 @@ import (
 	encoding "github.com/exanubes/url-shortener/internal/infrastructure/encoding/base_62"
 	"github.com/exanubes/url-shortener/internal/infrastructure/event"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/dynamodb"
-	// "github.com/exanubes/url-shortener/internal/infrastructure/persistence/postgresql"
 )
 
 func main() {
@@ -24,13 +23,6 @@ func main() {
 		log.Fatal(err)
 	}
 	table := dynamodb.NewRepository(client)
-
-	// db_client, err := postgresql.NewClient(ctx, "postgresql://admin:admin@localhost:5432/url_shortener")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// database := postgresql.NewPostgresqlRepository(db_client)
-	// defer database.Close()
 	processor := analytics.NewLinkVisitedProcessor(table)
 	event_bus := event.NewBus(func(event domain.LinkVisited) error { return processor.Handler(event) })
 	encoder := encoding.New()
