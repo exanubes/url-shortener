@@ -98,6 +98,6 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 	return err
 }
 
-func (repository *Repository) Visit(ctx context.Context, shortcode domain.ShortCode, visited_at time.Time) error {
-	return repository.client.Queries().LogLinkVisit(ctx, internal.LogLinkVisitParams{Shortcode: shortcode.String(), VisitedAt: visited_at})
+func (repository *Repository) Visit(ctx context.Context, event domain.LinkVisited) error {
+	return repository.client.Queries().LogLinkVisit(ctx, internal.LogLinkVisitParams{Shortcode: event.ShortCode, VisitedAt: event.VisitedAt})
 }
