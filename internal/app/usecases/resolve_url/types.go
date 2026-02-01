@@ -19,5 +19,5 @@ type UseCase interface {
 }
 
 type EventPublisher interface {
-	Publish(context.Context, domain.LinkVisited) error
+	Publish(context.Context, domain.Event) error
 }
