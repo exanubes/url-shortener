@@ -8,7 +8,7 @@ import (
 	"github.com/exanubes/url-shortener/internal/app/services/expiration"
 	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
-	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	resolveurl "github.com/exanubes/url-shortener/internal/app/usecases/resolve_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 	"github.com/exanubes/url-shortener/internal/infrastructure/api/http"
 	encoding "github.com/exanubes/url-shortener/internal/infrastructure/encoding/base_62"
@@ -31,7 +31,7 @@ func main() {
 	expiration_factory := expiration.NewFactory()
 	shortcodes_service := shortcode.NewService(token_generator, encoder)
 	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory)
-	visit_url_use_case := visitshorturl.New(table, table, event_bus)
+	visit_url_use_case := resolveurl.New(table, table, event_bus)
 
 	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
 	event_bus.Start(ctx)

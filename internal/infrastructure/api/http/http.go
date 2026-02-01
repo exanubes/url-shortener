@@ -11,7 +11,7 @@ import (
 	"time"
 
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
-	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	resolveurl "github.com/exanubes/url-shortener/internal/app/usecases/resolve_url"
 	"github.com/exanubes/url-shortener/internal/infrastructure/api"
 )
 
@@ -35,10 +35,10 @@ var DefaultConfig = HttpConfig{
 
 type HttpDriver struct {
 	create_url createshorturl.UseCase
-	visit_url  visitshorturl.UseCase
+	visit_url  resolveurl.UseCase
 }
 
-func NewHttpDriver(create_url createshorturl.UseCase, visit_url visitshorturl.UseCase) *HttpDriver {
+func NewHttpDriver(create_url createshorturl.UseCase, visit_url resolveurl.UseCase) *HttpDriver {
 	return &HttpDriver{
 		create_url: create_url,
 		visit_url:  visit_url,

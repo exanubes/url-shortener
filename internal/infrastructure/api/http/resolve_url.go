@@ -5,16 +5,16 @@ import (
 	"net/http"
 	"time"
 
-	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	resolveurl "github.com/exanubes/url-shortener/internal/app/usecases/resolve_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type ResolveUrlRoute struct {
-	usecase         visitshorturl.UseCase
+	usecase         resolveurl.UseCase
 	request_timeout time.Duration
 }
 
-func new_resolve_url_route(request_timeout time.Duration, usecase visitshorturl.UseCase) *ResolveUrlRoute {
+func new_resolve_url_route(request_timeout time.Duration, usecase resolveurl.UseCase) *ResolveUrlRoute {
 	return &ResolveUrlRoute{usecase, request_timeout}
 }
 

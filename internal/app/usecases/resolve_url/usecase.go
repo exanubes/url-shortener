@@ -1,4 +1,4 @@
-package visitshorturl
+package resolveurl
 
 import (
 	"context"
@@ -7,21 +7,21 @@ import (
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
-type VisitShortUrl struct {
+type ResolveUrl struct {
 	resolver  LinkResolver
 	consumer  LinkConsumer
 	publisher EventPublisher
 }
 
-func New(resolver LinkResolver, consumer LinkConsumer, publisher EventPublisher) *VisitShortUrl {
-	return &VisitShortUrl{
+func New(resolver LinkResolver, consumer LinkConsumer, publisher EventPublisher) *ResolveUrl {
+	return &ResolveUrl{
 		resolver:  resolver,
 		consumer:  consumer,
 		publisher: publisher,
 	}
 }
 
-func (usecase *VisitShortUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
+func (usecase *ResolveUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
 	link, err := usecase.resolver.Resolve(ctx, short_url)
 
 	if err != nil {

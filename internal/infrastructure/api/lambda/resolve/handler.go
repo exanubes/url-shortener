@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	visitshorturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_short_url"
+	resolveurl "github.com/exanubes/url-shortener/internal/app/usecases/resolve_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
@@ -13,10 +13,10 @@ type Response struct {
 	Message string `json:"message"`
 }
 type ResolveUrlHandler struct {
-	usecase visitshorturl.UseCase
+	usecase resolveurl.UseCase
 }
 
-func NewHandler(usecase visitshorturl.UseCase) *ResolveUrlHandler {
+func NewHandler(usecase resolveurl.UseCase) *ResolveUrlHandler {
 	return &ResolveUrlHandler{
 		usecase: usecase,
 	}

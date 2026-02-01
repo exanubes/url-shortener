@@ -1,4 +1,4 @@
-package visitshorturl
+package resolveurl
 
 import (
 	"context"
