@@ -27,6 +27,7 @@ resource "aws_iam_policy" "resolve_url_dynamodb_policy" {
       Effect = "Allow"
       Action = [
         "dynamodb:Query",
+        "dynamodb:UpdateItem",
       ],
       Resource = aws_dynamodb_table.url_shortener.arn
     }]

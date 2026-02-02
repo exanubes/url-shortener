@@ -8,7 +8,7 @@ import (
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
-var buckets = map[string]string{"HOUR": "2006-01-02T03", "DAY": "2006-01-02", "MONTH": "2006-01", "YEAR": "2006"}
+var buckets = map[string]string{"HOUR": "2006-01-02T15", "DAY": "2006-01-02", "MONTH": "2006-01", "YEAR": "2006"}
 
 func CreateLinkVisitBucketPartitionKeys(id string, visited_at time.Time) []PrimaryKey {
 	pk := fmt.Sprintf("LINK#%s", id)

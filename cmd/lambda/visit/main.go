@@ -1,4 +1,4 @@
-package visit
+package main
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func main() {
 	table := dynamodb.NewRepository(client)
 	handler := link_visited.NewHandler(table)
 
-	lambda.StartWithOptions(func(ctx context.Context, req events.SQSEvent) events.SQSEventResponse {
+	lambda.StartWithOptions(func(ctx context.Context, req events.SQSEvent) (events.SQSEventResponse, error) {
 		return handler.Handle(ctx, req)
 	}, lambda.WithContext(ctx))
 }

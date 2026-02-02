@@ -2,6 +2,8 @@ package link_visited
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	visiturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_url"
@@ -17,8 +19,9 @@ func NewHandler(event_store visiturl.LinkEventStore) *LinkVisitedHandler {
 	}
 }
 
-func (handler LinkVisitedHandler) Handle(ctx context.Context, event events.SQSEvent) events.SQSEventResponse {
+func (handler LinkVisitedHandler) Handle(ctx context.Context, event events.SQSEvent) (events.SQSEventResponse, error) {
 	var failed_records []events.SQSBatchItemFailure
+	var errors []string
 	for _, record := range event.Records {
 		msg, err := parse_message(record.Body)
 
@@ -27,10 +30,18 @@ func (handler LinkVisitedHandler) Handle(ctx context.Context, event events.SQSEv
 			continue
 		}
 
-		handler.event_store.Visit(ctx, map_to_domain_event(msg))
-	}
+		err = handler.event_store.Visit(ctx, map_to_domain_event(msg))
 
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+	}
+	var err error
+
+	if len(errors) != 0 {
+		err = fmt.Errorf("ERRORS: ", strings.Join(errors, "\n"))
+	}
 	return events.SQSEventResponse{
 		BatchItemFailures: failed_records,
-	}
+	}, err
 }

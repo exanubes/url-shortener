@@ -21,3 +21,4 @@ resource "aws_sqs_queue_redrive_allow_policy" "sqs_redrive_policy" {
     sourceQueueArns   = [aws_sqs_queue.link_visited_queue.arn]
   })
 }
+
