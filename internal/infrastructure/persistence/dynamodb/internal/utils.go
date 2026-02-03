@@ -36,7 +36,7 @@ func CreateLinkVisitPartitionKey(id string, visited_at time.Time) PrimaryKey {
 	now := time.Now()
 	pk := fmt.Sprintf("VISIT#%s#%s", id, now.Format("2006-01-02"))
 	dedup, _ := rand_hex()
-	sk := fmt.Sprintf("TS#%s%s", visited_at.UTC().Format(time.RFC3339Nano), dedup)
+	sk := fmt.Sprintf("TS#%s#%s", visited_at.UTC().Format(time.RFC3339Nano), dedup)
 	return PrimaryKey{PK: pk, SK: sk}
 }
 

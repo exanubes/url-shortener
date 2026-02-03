@@ -8,18 +8,18 @@ import (
 )
 
 type Bus struct {
-	events  chan domain.LinkVisited
-	handler func(domain.LinkVisited) error
+	events  chan domain.Event
+	handler func(domain.Event) error
 }
 
-func NewBus(handler func(domain.LinkVisited) error) *Bus {
+func NewBus(handler func(domain.Event) error) *Bus {
 	return &Bus{
-		events:  make(chan domain.LinkVisited, 5),
+		events:  make(chan domain.Event, 5),
 		handler: handler,
 	}
 }
 
-func (bus *Bus) Publish(ctx context.Context, event domain.LinkVisited) error {
+func (bus *Bus) Publish(ctx context.Context, event domain.Event) error {
 	select {
 	case bus.events <- event:
 	default:

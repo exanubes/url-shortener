@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/exanubes/url-shortener/internal/app/services/analytics"
 	"github.com/exanubes/url-shortener/internal/app/services/expiration"
 	"github.com/exanubes/url-shortener/internal/app/services/shortcode"
 	createshorturl "github.com/exanubes/url-shortener/internal/app/usecases/create_short_url"
@@ -23,8 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 	table := dynamodb.NewRepository(client)
-	processor := analytics.NewLinkVisitedProcessor(table)
-	event_bus := event.NewBus(func(event domain.LinkVisited) error { return processor.Handler(event) })
+	event_bus := event.NewBus(func(event domain.Event) error { return table.Visit(ctx, event.(domain.LinkVisited)) })
 	encoder := encoding.New()
 	token_generator := shortcode.NewGenerator(int64(7))
 	policy_factory := createshorturl.NewRetryPolicyFactory(3)
