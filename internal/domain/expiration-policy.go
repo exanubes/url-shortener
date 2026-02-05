@@ -59,6 +59,7 @@ func NewPolicySettings(max_age time.Duration, single_use bool) (PolicySettings, 
 
 type ExpirationPolicy interface {
 	Expired(ExpirationContext) bool
+	ExpiresAt(ExpirationContext) time.Time
 }
 
 type ExpirationContext struct {
@@ -83,7 +84,10 @@ func (policy MaxLinkAgeExpirationPolicy) Expired(context ExpirationContext) bool
 	expires_at := context.CreatedAt.Add(policy.age)
 
 	return context.Now.After(expires_at)
+}
 
+func (policy MaxLinkAgeExpirationPolicy) ExpiresAt(context ExpirationContext) time.Time {
+	return context.CreatedAt.Add(policy.age)
 }
 
 type OneTimeLinkExpirationPolicy struct {
@@ -96,6 +100,10 @@ func NewOneTimeLinkExpirationPolicy() OneTimeLinkExpirationPolicy {
 
 func (OneTimeLinkExpirationPolicy) Expired(context ExpirationContext) bool {
 	return !context.ConsumedAt.IsZero()
+}
+
+func (policy OneTimeLinkExpirationPolicy) ExpiresAt(context ExpirationContext) time.Time {
+	return time.Time{}
 }
 
 type ChainExpirationPolicy struct {
@@ -118,6 +126,24 @@ func (policy ChainExpirationPolicy) Expired(context ExpirationContext) bool {
 	}
 
 	return false
+}
+
+func (policy ChainExpirationPolicy) ExpiresAt(context ExpirationContext) time.Time {
+	var expires_at time.Time
+
+	for _, p := range policy.policies {
+		expiration := p.ExpiresAt(context)
+
+		if expiration.IsZero() {
+			continue
+		}
+
+		if expires_at.IsZero() || expiration.Before(expires_at) {
+			expires_at = expiration
+		}
+	}
+
+	return expires_at
 }
 
 func build_expiration_policy(spec PolicySpec) (ExpirationPolicy, error) {

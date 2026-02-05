@@ -21,23 +21,25 @@ func New(resolver LinkResolver, consumer LinkConsumer, publisher EventPublisher)
 	}
 }
 
-func (usecase *ResolveUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.Url, error) {
+func (usecase *ResolveUrl) Execute(ctx context.Context, short_url domain.ShortCode) (domain.ResolveUrlCommandOutput, error) {
 	link, err := usecase.resolver.Resolve(ctx, short_url)
 
 	if err != nil {
-		return domain.Url{}, err
+		return domain.ResolveUrlCommandOutput{}, err
 	}
 	now := time.Now()
 	url, err := link.Visit(now)
 
 	if err != nil {
-		return domain.Url{}, err
+		return domain.ResolveUrlCommandOutput{}, err
 	}
 
 	if link.SingleUse() {
 		if err := usecase.consumer.Consume(ctx, short_url); err != nil {
-			return domain.Url{}, err
+			return domain.ResolveUrlCommandOutput{}, err
 		}
+
+		link.Consume(now)
 	}
 
 	usecase.publisher.Publish(ctx, domain.LinkVisited{
@@ -45,5 +47,13 @@ func (usecase *ResolveUrl) Execute(ctx context.Context, short_url domain.ShortCo
 		VisitedAt: now,
 	})
 
-	return url, nil
+	expiration_status, err := link.ExpirationStatus(time.Now())
+	if err != nil {
+		//TODO: log
+	}
+
+	return domain.ResolveUrlCommandOutput{
+		Url:    url,
+		Status: expiration_status,
+	}, nil
 }

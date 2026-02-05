@@ -15,7 +15,7 @@ type LinkConsumer interface {
 }
 
 type UseCase interface {
-	Execute(context.Context, domain.ShortCode) (domain.Url, error)
+	Execute(context.Context, domain.ShortCode) (domain.ResolveUrlCommandOutput, error)
 }
 
 type EventPublisher interface {

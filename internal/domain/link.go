@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+type ExpirationStatus struct {
+	Consumed  bool
+	ExpiresAt time.Time
+}
+
 type LinkState struct {
 	Url         Url
 	Shortcode   ShortCode
@@ -58,15 +63,11 @@ func (link *Link) Visit(now time.Time) (Url, error) {
 	return link.url, nil
 }
 
-func (link Link) Url() Url {
-	return link.url
-}
-
 func (link Link) ShortCode() ShortCode {
 	return link.shortcode
 }
 
-func (link *Link) Snapshot() LinkState {
+func (link Link) Snapshot() LinkState {
 	return LinkState{
 		Url:         link.url,
 		Shortcode:   link.shortcode,
@@ -74,6 +75,29 @@ func (link *Link) Snapshot() LinkState {
 		CreatedAt:   link.created_at,
 		ConsumedAt:  link.consumed_at,
 	}
+}
+
+func (link Link) ExpirationStatus(now time.Time) (ExpirationStatus, error) {
+	expiration_policy, err := link.policy()
+
+	if err != nil {
+		return ExpirationStatus{}, err
+	}
+
+	var consumed bool
+
+	if !link.consumed_at.IsZero() {
+		consumed = true
+	}
+
+	return ExpirationStatus{
+		Consumed: consumed,
+		ExpiresAt: expiration_policy.ExpiresAt(ExpirationContext{
+			CreatedAt:  link.created_at,
+			Now:        now,
+			ConsumedAt: link.consumed_at,
+		}),
+	}, nil
 }
 
 func (link *Link) SingleUse() bool {
@@ -84,6 +108,10 @@ func (link *Link) SingleUse() bool {
 	}
 
 	return false
+}
+
+func (link *Link) Consume(now time.Time) {
+	link.consumed_at = now
 }
 
 func (link *Link) policy() (ExpirationPolicy, error) {

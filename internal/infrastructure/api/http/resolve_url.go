@@ -45,5 +45,5 @@ func (route *ResolveUrlRoute) ServeHTTP(response http.ResponseWriter, request *h
 		return
 	}
 
-	http.Redirect(response, request, result.String(), http.StatusTemporaryRedirect)
+	http.Redirect(response, request, result.Url.String(), http.StatusTemporaryRedirect)
 }

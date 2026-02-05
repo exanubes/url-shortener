@@ -2,12 +2,16 @@ package resolve
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	resolveurl "github.com/exanubes/url-shortener/internal/app/usecases/resolve_url"
 	"github.com/exanubes/url-shortener/internal/domain"
 )
+
+var CACHE_MAX_AGE = 86400 * time.Second // 1 day
 
 type Response struct {
 	Message string `json:"message"`
@@ -41,7 +45,7 @@ func (handler ResolveUrlHandler) Handle(ctx context.Context, req events.APIGatew
 		}
 	}
 
-	url, err := handler.usecase.Execute(ctx, sc)
+	output, err := handler.usecase.Execute(ctx, sc)
 
 	if err != nil {
 		return events.APIGatewayV2HTTPResponse{
@@ -49,10 +53,29 @@ func (handler ResolveUrlHandler) Handle(ctx context.Context, req events.APIGatew
 		}
 	}
 
+	var cache_control string
+
+	if output.Status.Consumed || output.Status.ExpiresAt.IsZero() {
+		cache_control = "no-store"
+	} else {
+		now := time.Now()
+		duration := output.Status.ExpiresAt.Sub(now)
+		if duration <= 0 {
+			cache_control = "no-store"
+		} else {
+			max_age := min(output.Status.ExpiresAt.Sub(now), CACHE_MAX_AGE).Seconds()
+			cache_control = fmt.Sprintf(
+				"public, max-age=0, s-maxage=%d",
+				int(max_age),
+			)
+		}
+	}
+
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusTemporaryRedirect,
 		Headers: map[string]string{
-			"Location": url.String(),
+			"Location":      output.Url.String(),
+			"Cache-Control": cache_control,
 		},
 	}
 }
