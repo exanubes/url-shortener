@@ -11,29 +11,12 @@ data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
 }
 
-data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
-  name = "Managed-AllViewerExceptHostHeader"
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
 }
 
-resource "aws_cloudfront_cache_policy" "caching_custom" {
-  name        = "resolve-short-code-cache"
-  default_ttl = 0
-  max_ttl     = 86400
-  min_ttl     = 0
-
-  parameters_in_cache_key_and_forwarded_to_origin {
-    cookies_config {
-      cookie_behavior = "none"
-    }
-
-    headers_config {
-      header_behavior = "none"
-    }
-
-    query_strings_config {
-      query_string_behavior = "none"
-    }
-  }
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
 }
 
 resource "aws_cloudfront_distribution" "url_shortener" {
@@ -54,7 +37,8 @@ resource "aws_cloudfront_distribution" "url_shortener" {
   default_cache_behavior {
     target_origin_id         = local.origin_id
     viewer_protocol_policy   = "redirect-to-https"
-    cache_policy_id          = aws_cloudfront_cache_policy.caching_custom.id
+    cache_policy_id = data.aws_cloudfront_cache_policy.caching_optimized.id
+
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     compress                 = true
 

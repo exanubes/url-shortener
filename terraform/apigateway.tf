@@ -46,6 +46,12 @@ resource "aws_apigatewayv2_route" "resolve_url_route" {
   target    = "integrations/${aws_apigatewayv2_integration.resolve_url_integration.id}"
 }
 
+resource "aws_apigatewayv2_route" "resolve_url_head_route" {
+  api_id    = aws_apigatewayv2_api.url_shortener_api.id
+  route_key = "HEAD /{short_code}"
+  target    = "integrations/${aws_apigatewayv2_integration.resolve_url_integration.id}"
+}
+
 resource "aws_lambda_permission" "allow_apigw_resolve_url" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
