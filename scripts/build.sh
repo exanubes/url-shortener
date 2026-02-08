@@ -2,7 +2,7 @@
 
 set -e
 
-for lambda in create resolve visit; do
+for lambda in create resolve visit processor; do
   mkdir -p dist/$lambda
   GOOS=linux GOARCH=arm64 go build -o dist/$lambda/bootstrap cmd/lambda/$lambda/main.go
   (cd dist/$lambda && zip -q function.zip bootstrap)

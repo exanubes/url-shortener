@@ -1,7 +1,5 @@
-# log procesor lambda
-
-resource "aws_iam_role" "lambda_to_kinesis" {
-  name = "lambda_to_kinesis"
+resource "aws_iam_role" "cloudfront_rt_logs_processor_role" {
+  name = "cloudfront_rt_logs_processor_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -13,7 +11,8 @@ resource "aws_iam_role" "lambda_to_kinesis" {
   })
 }
 
-resource "aws_iam_policy" "lambda_to_kinesis_policy" {
+resource "aws_iam_role_policy" "log_processor_kinesis_policy" {
+  role = aws_iam_role.cloudfront_rt_logs_processor_role.name
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -29,16 +28,26 @@ resource "aws_iam_policy" "lambda_to_kinesis_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_to_kinesis_policy_attachment" {
-  role       = aws_iam_role.lambda_to_kinesis.name
-  policy_arn = aws_iam_policy.lambda_to_kinesis_policy.arn
+resource "aws_iam_role_policy" "log_processor_sqs_policy" {
+  role = aws_iam_role.cloudfront_rt_logs_processor_role.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "sqs:SendMessage",
+      ],
+      Resource = aws_sqs_queue.cloudfront_rt_logs_dlq.arn
+    }]
+  })
 }
+
 
 resource "aws_lambda_function" "cloudfront_rt_logs_processor" {
   function_name    = "cloudfront_rt_logs_processor"
-  role             = aws_iam_role.lambda_to_kinesis.arn
-  filename         = "../dist/logs/function.zip"
-  source_code_hash = filebase64sha256("../dist/logs/function.zip")
+  role             = aws_iam_role.cloudfront_rt_logs_processor_role.arn
+  filename         = "../dist/processor/function.zip"
+  source_code_hash = filebase64sha256("../dist/processor/function.zip")
   handler          = "bootstrap"
   runtime          = "provided.al2"
   architectures    = ["arm64"]
@@ -59,4 +68,9 @@ resource "aws_lambda_event_source_mapping" "kinesis_trigger" {
       destination_arn = aws_sqs_queue.cloudfront_rt_logs_dlq.arn
     }
   }
+}
+
+resource "aws_iam_role_policy_attachment" "log_processor_execution_role_attachment" {
+  role       = aws_iam_role.cloudfront_rt_logs_processor_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
