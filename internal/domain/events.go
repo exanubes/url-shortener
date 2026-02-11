@@ -10,6 +10,7 @@ type LinkVisited struct {
 	ShortCode string
 	VisitedAt time.Time
 	IpAddress string
+	UserAgent string
 }
 
 func (LinkVisited) DomainEvent() {}

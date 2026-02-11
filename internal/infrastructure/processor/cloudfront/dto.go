@@ -9,6 +9,6 @@ type LogItem struct {
 	IpAddress string
 	Method    string
 	URI       string
-	Status    string
+	Status    int
 	UserAgent string
 }

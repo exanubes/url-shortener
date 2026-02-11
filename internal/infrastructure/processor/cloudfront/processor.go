@@ -3,16 +3,21 @@ package cloudfront
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
+	visiturl "github.com/exanubes/url-shortener/internal/app/usecases/visit_url"
+	"github.com/exanubes/url-shortener/internal/domain"
 )
 
 type LogProcessor struct {
+	event_store visiturl.LinkEventStore
 }
 
-func NewHandler() *LogProcessor {
-	return &LogProcessor{}
+func NewHandler(event_store visiturl.LinkEventStore) *LogProcessor {
+	return &LogProcessor{event_store}
 }
 
 func (handler LogProcessor) Handle(ctx context.Context, event events.KinesisEvent) (events.KinesisEventResponse, error) {
@@ -32,26 +37,37 @@ func (handler LogProcessor) Handle(ctx context.Context, event events.KinesisEven
 			continue
 		}
 
-		var log_item LogItem
+		status, err := strconv.Atoi(fields[2])
 
-		log_item.Timestamp = Timestamp(parse_timestamp(fields[0]))
-		log_item.IpAddress = fields[1]
-		log_item.Status = fields[2]
-		log_item.Method = fields[3]
-		log_item.URI = fields[4]
-		log_item.UserAgent = fields[5]
+		if err != nil {
+			failures = append(failures, events.KinesisBatchItemFailure{
+				ItemIdentifier: record.EventID,
+			})
+			errors = append(errors, err.Error())
+			continue
+		}
 
-		fmt.Println("TIMESTAMP: ", log_item.Timestamp)
-		fmt.Println("METHOD: ", log_item.Method)
-		fmt.Println("URI: ", log_item.URI)
-		fmt.Println("STATUS: ", log_item.Status)
-		fmt.Println("USER_AGENT: ", log_item.UserAgent)
-		fmt.Println("IP_ADDRESS: ", log_item.IpAddress)
+		log_item := LogItem{
+			Timestamp: parse_timestamp(fields[0]),
+			IpAddress: fields[1],
+			Status:    status,
+			Method:    fields[3],
+			URI:       fields[4],
+			UserAgent: fields[5],
+		}
 
-	}
+		if log_item.Method == "GET" && log_item.Status == http.StatusTemporaryRedirect {
+			err := handler.event_store.Visit(ctx, map_to_domain_event(log_item))
 
-	if len(event.Records) == 0 {
-		fmt.Println("NO RECORDS")
+			if err != nil {
+				failures = append(failures, events.KinesisBatchItemFailure{
+					ItemIdentifier: record.EventID,
+				})
+				errors = append(errors, err.Error())
+				continue
+			}
+		}
+
 	}
 
 	var err error
@@ -63,4 +79,16 @@ func (handler LogProcessor) Handle(ctx context.Context, event events.KinesisEven
 	return events.KinesisEventResponse{
 		BatchItemFailures: failures,
 	}, err
+}
+
+func map_to_domain_event(msg LogItem) domain.LinkVisited {
+
+	short_code := strings.Split(strings.Split(msg.URI, "/")[1], "?")[0]
+
+	return domain.LinkVisited{
+		ShortCode: short_code,
+		VisitedAt: msg.Timestamp,
+		IpAddress: msg.IpAddress,
+		UserAgent: msg.UserAgent,
+	}
 }
