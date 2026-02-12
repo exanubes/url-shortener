@@ -59,18 +59,18 @@ resource "aws_iam_policy" "visit_url_sqs_policy" {
   })
 }
 
-resource "aws_lambda_event_source_mapping" "visit_url_sqs_trigger" {
-  event_source_arn = aws_sqs_queue.link_visited_queue.arn
-  function_name    = aws_lambda_function.visit_url.arn
-
-  batch_size                         = 10
-  maximum_batching_window_in_seconds = 5
-  function_response_types            = ["ReportBatchItemFailures"]
-
-  scaling_config {
-    maximum_concurrency = 2
-  }
-}
+# resource "aws_lambda_event_source_mapping" "visit_url_sqs_trigger" {
+#   event_source_arn = aws_sqs_queue.link_visited_queue.arn
+#   function_name    = aws_lambda_function.visit_url.arn
+#
+#   batch_size                         = 10
+#   maximum_batching_window_in_seconds = 5
+#   function_response_types            = ["ReportBatchItemFailures"]
+#
+#   scaling_config {
+#     maximum_concurrency = 2
+#   }
+# }
 
 resource "aws_iam_role_policy_attachment" "visit_url_sqs_policy_attachment" {
   role       = aws_iam_role.visit_url.name

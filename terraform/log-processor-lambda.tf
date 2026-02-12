@@ -42,6 +42,23 @@ resource "aws_iam_role_policy" "log_processor_sqs_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "visit_url_dynamodb_policy" {
+  role = aws_iam_role.cloudfront_rt_logs_processor_role.name
+  name = "lambda_dynamodb_visit_url"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "dynamodb:TransactWriteItems",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+      ],
+      Resource = aws_dynamodb_table.url_shortener.arn
+    }]
+  })
+}
+
 
 resource "aws_lambda_function" "cloudfront_rt_logs_processor" {
   function_name    = "cloudfront_rt_logs_processor"
