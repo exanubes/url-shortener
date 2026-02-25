@@ -13,3 +13,7 @@ type TokenSpaceGenerator interface {
 type Service interface {
 	Generate() (domain.ShortCode, error)
 }
+
+type Scrambler interface {
+	Scramble(Token) (Token, error)
+}
