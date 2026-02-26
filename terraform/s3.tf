@@ -1,3 +1,4 @@
 resource "aws_s3_bucket" "logs" {
-  bucket = "url_shortener_cloudfront_real_time_logs"
+  bucket        = "url-shortener-cloudfront-real-time-logs"
+  force_destroy = true
 }

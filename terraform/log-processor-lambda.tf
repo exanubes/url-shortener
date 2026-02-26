@@ -21,7 +21,7 @@ resource "aws_iam_role_policy" "log_processor_kinesis_policy" {
         "kinesis:GetRecords",
         "kinesis:GetShardIterator",
         "kinesis:DescribeStream",
-        "kinesis:ListStreams",
+        "kinesis:ListShards",
       ],
       Resource = aws_kinesis_stream.visits.arn
     }]

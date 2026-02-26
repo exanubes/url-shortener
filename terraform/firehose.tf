@@ -21,7 +21,7 @@ resource "aws_iam_role_policy" "firehose_policy" {
         "kinesis:GetRecords",
         "kinesis:GetShardIterator",
         "kinesis:DescribeStream",
-        "kinesis:ListStreams",
+        "kinesis:ListShards",
       ],
       Resource = aws_kinesis_stream.visits.arn
       },
@@ -43,11 +43,21 @@ resource "aws_iam_role_policy" "firehose_policy" {
         Action = [
           "logs:PutLogEvents",
         ],
-        Resource = "*" # TODO:
+        Resource = "${aws_cloudwatch_log_group.firehose_logs.arn}:*"
       }
 
     ]
   })
+}
+
+resource "aws_cloudwatch_log_group" "firehose_logs" {
+  name              = "/aws/firehose/cloudfront-logs"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_stream" "firehose_s3_delivery" {
+  name           = "s3-delivery"
+  log_group_name = aws_cloudwatch_log_group.firehose_logs.name
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "logs_delivery_stream" {
@@ -74,4 +84,6 @@ resource "aws_kinesis_firehose_delivery_stream" "logs_delivery_stream" {
       log_stream_name = "s3-delivery"
     }
   }
+
+  depends_on = [aws_cloudwatch_log_stream.firehose_s3_delivery]
 }
