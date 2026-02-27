@@ -39,25 +39,6 @@ resource "aws_iam_role_policy_attachment" "resolve_url_dynamodb_policy_attachmen
   policy_arn = aws_iam_policy.resolve_url_dynamodb_policy.arn
 }
 
-resource "aws_iam_policy" "resolve_url_sqs_policy" {
-  name = "lambda_sqs_resolve_url"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "sqs:SendMessage",
-      ],
-      Resource = aws_sqs_queue.link_visited_queue.arn
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "resolve_url_sqs_policy_attachment" {
-  role       = aws_iam_role.resolve_url.name
-  policy_arn = aws_iam_policy.resolve_url_sqs_policy.arn
-}
-
 resource "aws_lambda_function" "resolve_url" {
   function_name    = "resolve_url"
   role             = aws_iam_role.resolve_url.arn
@@ -66,10 +47,4 @@ resource "aws_lambda_function" "resolve_url" {
   handler          = "bootstrap"
   runtime          = "provided.al2"
   architectures    = ["arm64"]
-
-  environment {
-    variables = {
-      LINK_VISITED_QUEUE_URL = aws_sqs_queue.link_visited_queue.url
-    }
-  }
 }

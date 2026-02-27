@@ -8,16 +8,14 @@ import (
 )
 
 type ResolveUrl struct {
-	resolver  LinkResolver
-	consumer  LinkConsumer
-	publisher EventPublisher
+	resolver LinkResolver
+	consumer LinkConsumer
 }
 
-func New(resolver LinkResolver, consumer LinkConsumer, publisher EventPublisher) *ResolveUrl {
+func New(resolver LinkResolver, consumer LinkConsumer) *ResolveUrl {
 	return &ResolveUrl{
-		resolver:  resolver,
-		consumer:  consumer,
-		publisher: publisher,
+		resolver: resolver,
+		consumer: consumer,
 	}
 }
 
@@ -41,11 +39,6 @@ func (usecase *ResolveUrl) Execute(ctx context.Context, short_url domain.ShortCo
 
 		link.Consume(now)
 	}
-
-	usecase.publisher.Publish(ctx, domain.LinkVisited{
-		ShortCode: short_url.String(),
-		VisitedAt: now,
-	})
 
 	expiration_status, err := link.ExpirationStatus(time.Now())
 	if err != nil {

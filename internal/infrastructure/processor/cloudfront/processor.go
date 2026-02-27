@@ -12,6 +12,7 @@ import (
 	"github.com/exanubes/url-shortener/internal/domain"
 )
 
+// NOTE: A lambda handler for processing cloudfront real time access logs from a kinesis data stream
 type LogProcessor struct {
 	event_store visiturl.LinkEventStore
 }
@@ -24,6 +25,8 @@ func (handler LogProcessor) Handle(ctx context.Context, event events.KinesisEven
 	var failures = make([]events.KinesisBatchItemFailure, 0)
 	var errors = make([]string, 0)
 	for _, record := range event.Records {
+		// NOTE: cloudfront logs are delivered in a TSV format, not json
+		// Need to parse the values into a struct manually based on property position in the string
 		fields := strings.Split(
 			strings.TrimSpace(string(record.Kinesis.Data)),
 			"\t",
