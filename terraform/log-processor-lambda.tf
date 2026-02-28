@@ -91,3 +91,7 @@ resource "aws_iam_role_policy_attachment" "log_processor_execution_role_attachme
   role       = aws_iam_role.cloudfront_rt_logs_processor_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+resource "aws_sqs_queue" "cloudfront_rt_logs_dlq" {
+  name = "cloudfront_rt_logs"
+}

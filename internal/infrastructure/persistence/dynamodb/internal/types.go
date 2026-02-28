@@ -41,10 +41,3 @@ type PolicySpecDto struct {
 type MaxAgeParamsDto struct {
 	DurationNanoseconds time.Duration `json:"duration_nanoseconds"`
 }
-
-type LogLinkVisitRow struct {
-	PK        string    `dynamodbav:"PK"`
-	SK        string    `dynamodbav:"SK"`
-	VisitedAt time.Time `dynamodbav:"visited_at"`
-	IpAddress net.IP    `dynamodbav:"ip_address,omitempty"`
-}

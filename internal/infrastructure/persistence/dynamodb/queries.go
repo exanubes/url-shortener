@@ -3,6 +3,9 @@ package dynamodb
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -59,41 +62,34 @@ func (q *queries) GetLink(ctx context.Context, id string) (*internal.LinkRow, er
 	return &output, err
 }
 
-// TODO:
 func (q *queries) LogLinkVisit(ctx context.Context, input internal.LogLinkVisitParams) error {
-	visit_partition := internal.CreateLinkVisitPartitionKey(input.Shortcode, input.VisitedAt)
-	row := internal.LogLinkVisitRow{
-		PK:        visit_partition.PK,
-		SK:        visit_partition.SK,
-		VisitedAt: input.VisitedAt,
-		IpAddress: input.IpAddress,
-	}
-
-	visit_row, err := attributevalue.MarshalMap(row)
-
-	if err != nil {
-		return err
-	}
-
 	bucket_updates, err := q.create_bucket_updates(input.Shortcode, input.VisitedAt)
 
 	if err != nil {
 		return err
 	}
+	var wg sync.WaitGroup
+	errors := []string{}
+	for _, update := range bucket_updates {
+		wg.Add(1)
 
-	visit_events := []types.TransactWriteItem{{
-		Put: &types.Put{
-			TableName: &q.table_name,
-			Item:      visit_row,
-		}},
+		go func(cmd dynamodb.UpdateItemInput) {
+			defer wg.Done()
+			_, err := q.db.UpdateItem(ctx, &cmd)
+
+			if err != nil {
+				errors = append(errors, err.Error())
+			}
+		}(update)
 	}
 
-	_, err = q.db.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
-		TransactItems: append(visit_events, bucket_updates...),
-	})
+	wg.Wait()
+
+	if len(errors) != 0 {
+		err = fmt.Errorf("Error: %s", strings.Join(errors, "\n "))
+	}
 
 	return err
-
 }
 
 func (q *queries) CreateLink(ctx context.Context, input internal.LinkRow) error {
@@ -143,10 +139,10 @@ func (q *queries) ConsumeSingleUseLink(ctx context.Context, input internal.Consu
 	return err
 }
 
-func (q *queries) create_bucket_updates(shortcode string, visited_at time.Time) ([]types.TransactWriteItem, error) {
+func (q *queries) create_bucket_updates(shortcode string, visited_at time.Time) ([]dynamodb.UpdateItemInput, error) {
 	buckets := internal.CreateLinkVisitBucketPartitionKeys(shortcode, visited_at)
 
-	bucket_updates := make([]types.TransactWriteItem, len(buckets))
+	bucket_updates := make([]dynamodb.UpdateItemInput, len(buckets))
 
 	for index, bucket := range buckets {
 		bucket_key, err := attributevalue.MarshalMap(bucket)
@@ -154,18 +150,16 @@ func (q *queries) create_bucket_updates(shortcode string, visited_at time.Time) 
 		if err != nil {
 			return nil, err
 		}
-		bucket_updates[index] = types.TransactWriteItem{
-			Update: &types.Update{
-				TableName:        &q.table_name,
-				Key:              bucket_key,
-				UpdateExpression: aws.String("SET #c = if_not_exists(#c, :zero) + :inc"),
-				ExpressionAttributeNames: map[string]string{
-					"#c": "count",
-				},
-				ExpressionAttributeValues: map[string]types.AttributeValue{
-					":zero": &types.AttributeValueMemberN{Value: "0"},
-					":inc":  &types.AttributeValueMemberN{Value: "1"},
-				},
+		bucket_updates[index] = dynamodb.UpdateItemInput{
+			TableName:        &q.table_name,
+			Key:              bucket_key,
+			UpdateExpression: aws.String("SET #c = if_not_exists(#c, :zero) + :inc"),
+			ExpressionAttributeNames: map[string]string{
+				"#c": "count",
+			},
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":zero": &types.AttributeValueMemberN{Value: "0"},
+				":inc":  &types.AttributeValueMemberN{Value: "1"},
 			},
 		}
 	}
