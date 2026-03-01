@@ -72,16 +72,16 @@ resource "aws_kinesis_firehose_delivery_stream" "logs_delivery_stream" {
   extended_s3_configuration {
     role_arn            = aws_iam_role.firehose_role.arn
     bucket_arn          = aws_s3_bucket.logs.arn
-    buffering_size      = 64
+    buffering_size      = 128
     buffering_interval  = 300
     compression_format  = "GZIP"
-    prefix              = "raw/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
+    prefix              = "raw/dt=!{timestamp:yyyy-MM-dd}/"
     error_output_prefix = "errors/"
 
     cloudwatch_logging_options {
       enabled         = true
-      log_group_name  = "/aws/firehose/cloudfront-logs"
-      log_stream_name = "s3-delivery"
+      log_group_name  = aws_cloudwatch_log_group.firehose_logs.name
+      log_stream_name = aws_cloudwatch_log_stream.firehose_s3_delivery.name
     }
   }
 
