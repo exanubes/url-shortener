@@ -50,8 +50,6 @@ resource "aws_iam_role_policy" "visit_url_dynamodb_policy" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "dynamodb:TransactWriteItems",
-        "dynamodb:PutItem",
         "dynamodb:UpdateItem",
       ],
       Resource = aws_dynamodb_table.url_shortener.arn
