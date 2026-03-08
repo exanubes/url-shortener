@@ -34,7 +34,21 @@ costs for the actual scale I'm building for. I cover this in more detail in the 
 
 ![URL Shortening Service architecture diagram](./docs/system-design.svg)
 
-TODO: Description
+To make a scale like this possible, it requires an aggressive caching strategy to avoid extra costs of computing each
+request individually for that reason the API Gateway is fronted by the Cloudfront CDN which will return cached responses
+whenever possible, in this case that's a redirect to the appropriate URL. In case of a cache miss, we invoke a relevant lambda
+function through an API Gateway integration. The two use cases are in separate lambdas rather than a lambdalith to avoid
+having to share resources between the two especially since there's potentially 10x more requests to resolve a short code
+than to create a new one in the worst case scenario or without caching. Both lambdas integrate with a DynamoDB table to
+store/retrieve short codes, urls and expiration policies.
+
+Once the response is served from the CDN, whether it's a Cache Hit or Miss, Cloudfront streams logs to a Kinesis Data Stream
+for processing. A lambda function picks up the logs in batches and aggregates the visits in four granularities in the
+DynamoDB table to provide analytics data*. AWS Firehose picks up the same stream of logs and archives it in an S3 bucket.
+
+> *DynamoDB is not a good choice for analytics data as it's an OLTP system, this was just a convenient solution for me in
+this exercise, however, at the proposed scale it'd be cost prohibitive to use it this way.
+An OLAP database can injest data from the S3 bucket to make it an economically viable system for providing link analytics. 
 
 ### Create url request flow
 
@@ -71,31 +85,74 @@ More on that in the [implementation section](#aggregating-visits).
 
 ## Implementation
 
+My implementation follows DDD principles in combination with Ports and Adapters architecture. I've demarcated
+a single Link aggregate which consists of the link entity, a few value objects - Url, ShortCode and PolicySpec - and couple
+time-based properties.
+
+
 ### Create URL
 
-TODO: Description
+When user wants to create a new short url, it needs to at least provide the target URL that's supposed to be shortened, but
+can also define expiration policies.
 
-Challenge: generating unique short codes 
+#### Expiration Policies
 
-Attempt 1: Incrementing counter
-- sequentiality
-- need to rely on an external storage layer in a distributed system
+The two implemented policies to choose from are MaxAge e.g., 30 days and OneTime for links
+that can only be consumed once. However, it would be fairly simple to introduce many other policies like password protected links,
+links that are authenticated through an Identity Provider, links that are created early but enabled from a particular
+datetime. The policies could also be used to disable a link temporarily without having to change the database model. It's
+a fairly flexible model.
 
-Attempt 2: Generating random number in a 62^n space
-- birthday problem
+PolicySpec is owned by the Link entity as rehydrating a link from a database without its policies would create an invalid
+Link aggregate and could result in expired links being errounously used.
 
-Attempt 3: Snowflake id adjusted for lambda 
-- original Snowflake ID is not usable by lambdas
-- sequentiality
+#### Shortcode generation
 
-Final: Snowflake + Feistel Network for removing sequentiality 
-- using snowflake to deterministically generate a unique id
-- using the feistel network algorithm to scramble the id
-- to keep the short code as short as possible, we could use unix time which is 31 bits, instead of epoch's 41 bits. A 
-62**7 number space is 42 bits but the first bit is always 0 for future proofing. This leaves 10 bits to split up between
-machine and sequence ids, however, at the scale of ~1200 new short codes per second that might not be enough and that's if
-all bits go to sequence, in reality it would have to be split between them so it would support even less queries per second
-without short code clashes
+Reliably generating a url shortcode has turned out to be the biggest challenge. There are basically two parts for generating
+a short code - generating a number and encoding it, usually into base62 that's 0-9a-zA-Z. This means that 61 is Z, 62 is 10, 10 is a - we use
+62 characters to represent numbers instead of the usual 10.
+
+Then there's the storage consideration of 365B records i.e., unique short codes. Since each character in the shortcodes
+has 62 options we can count how many available numbers there are for n length by exponentiating 62. So $62^2$ is 3844
+short codes. Long story short, we need a minimum of 7 characters for a $62^7$ total short codes (3.5Q).
+
+First attempt was just incrementing a counter, however, I had two problems with it. First of all, it would require
+some sort of synchronization via a database and managing multiple "buckets" to avoid the hot key problem in a distributed system and second, it introduces sequentiality to the 
+generated shortcodes.
+
+Second attempt, I tried generating a random number in the $62^7$ number space which worked just fine for me. There was
+no sequentiality, it generated completely random short codes and it seemed overall the right solution. However, I wasn't
+aware of the [birthday problem](https://en.wikipedia.org/wiki/Birthday_problem) which states that once you've generated a
+square root of numbers out of all the available numbers, the probability of generating the same number again exceeds 50%. 
+
+$$\sqrt{62^7} = 1876596$$
+
+At the rate of ~1200rps that's around 26 minutes of the system running before we reach that threshold. So, reluctantly,
+I figured maybe if I increase the number space, it'd be OK. Even if I increase it to $62^{11}$ it would only take around 7.2B
+short codes and the scale is supposed to be 365B. This disqualified this approach for me.
+
+Next, I've decided to focus on having a reliable deterministic unique id rather than on keeping the short code at 7 characters
+and tried snowflake id adjusted for the Lambda environment. I had 41 bits for timestamp, 10 bits for worker id and 12
+bits for sequence. This worked great, I had a deterministic, unique ID generation that will work in a highly distributed system
+that circumvents the birthday problem. However, it was sequential again.
+
+Last but not least, I combined the snowflake id with a Feistel Network algorithm to scramble the number before base 62 encoding
+it. The Feistel Network alogorithm keeps the same characteristics of the number it scrambles - scrambling a random number 
+will run into the birthday problem the same way - as it is a reversible algorithm so each unique number produces a different unique number.
+
+This approach results in a unique, non-sequential short code that's 11 characters long due to relying on a 64-bit snowflake id.
+
+> I've also considered shortening the timestamp to be a UNIX epoch in seconds to try and fit in the $62^7$ space which is
+42bits. An epoch is 31bits, that leaves ten for sequence and machine id which is very little, even if all 10 bits went to
+sequence that's a maximum of 1024 requests per second which is far below the ~1200rps requirement.
+
+#### Handling collisions
+
+The only reliable way to actually verify if the short code is unique or not, is the database. There's no way around it and
+because of the large scale it needs to be an atomic operation, a unique constraint on a column in an SQL table is perfect for this.
+In DynamoDB it can be achieved with a condition expression that checks that the PK and SK attributes don't exist for this short code.
+I consider a short code collision a domain error so I've created a sentinel error for this and regenerate the short code
+if it occurs.
 
 
 ### Resolve URL
@@ -105,6 +162,7 @@ TODO: Description
 Challenge: handling one-time links in a distributed system reliably
 
 Challenge: introducing caching while at the same time having somewhat accurate counts of the visits
+
 
 ### Aggregating visits
 
