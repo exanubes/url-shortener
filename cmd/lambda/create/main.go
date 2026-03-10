@@ -27,7 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	table := dynamodb.NewRepository(client)
 	hash := fnv.New64a()
 	log_stream_name := os.Getenv("AWS_LAMBDA_LOG_STREAM_NAME")
 	hash.Write([]byte(log_stream_name))
@@ -39,12 +38,13 @@ func main() {
 
 	clock := clock.NewClock()
 	token_generator := shortcode.NewSnowflakeGenerator(hash, epoch_date, clock)
+	table := dynamodb.NewRepository(client, clock)
 	policy_factory := createshorturl.NewRetryPolicyFactory(3)
 	expiration_factory := expiration.NewFactory()
 	encoder := encoding.New()
 	scrambler := shortcode.NewFeistel(feistel_key)
 	shortcodes_service := shortcode.NewService(token_generator, scrambler, encoder)
-	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory)
+	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory, clock)
 	handler := create.NewHandler(create_short_url_use_case)
 	lambda.StartWithOptions(func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 		return handler.Handle(ctx, req), nil

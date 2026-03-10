@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/exanubes/url-shortener/internal/infrastructure/clock"
 	"github.com/exanubes/url-shortener/internal/infrastructure/persistence/dynamodb"
 	"github.com/exanubes/url-shortener/internal/infrastructure/processor/cloudfront"
 )
@@ -16,7 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	table := dynamodb.NewRepository(client)
+	clockInstance := clock.NewClock()
+	table := dynamodb.NewRepository(client, clockInstance)
 	handler := cloudfront.NewHandler(table)
 
 	lambda.StartWithOptions(func(ctx context.Context, req events.KinesisEvent) (events.KinesisEventResponse, error) {

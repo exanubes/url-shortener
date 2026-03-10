@@ -25,7 +25,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	table := dynamodb.NewRepository(client)
 	encoder := encoding.New()
 	clock := clock.NewClock()
 	hash := fnv.New64a()
@@ -33,12 +32,13 @@ func main() {
 
 	epoch_date, _ := time.Parse("2006-01-02T15:04:05.000", epoch)
 	token_generator := shortcode.NewSnowflakeGenerator(hash, epoch_date, clock)
+	table := dynamodb.NewRepository(client, clock)
 	scrambler := shortcode.NewFeistel(feistel_key)
 	policy_factory := createshorturl.NewRetryPolicyFactory(3)
 	expiration_factory := expiration.NewFactory()
 	shortcodes_service := shortcode.NewService(token_generator, scrambler, encoder)
-	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory)
-	visit_url_use_case := resolveurl.New(table, table)
+	create_short_url_use_case := createshorturl.New(table, shortcodes_service, policy_factory, expiration_factory, clock)
+	visit_url_use_case := resolveurl.New(table, table, clock)
 
 	driver := http.NewHttpDriver(create_short_url_use_case, visit_url_use_case)
 

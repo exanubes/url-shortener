@@ -3,7 +3,6 @@ package dynamodb
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/exanubes/url-shortener/internal/domain"
@@ -12,10 +11,11 @@ import (
 
 type Repository struct {
 	client *client
+	clock  domain.Clock
 }
 
-func NewRepository(client *client) *Repository {
-	return &Repository{client: client}
+func NewRepository(client *client, clock domain.Clock) *Repository {
+	return &Repository{client: client, clock: clock}
 }
 
 func (repository *Repository) Write(ctx context.Context, link *domain.Link) error {
@@ -88,7 +88,7 @@ func (repository *Repository) Resolve(ctx context.Context, input domain.ShortCod
 
 // Consume single-use link, do not use with multi-use links
 func (repository *Repository) Consume(ctx context.Context, input domain.ShortCode) error {
-	err := repository.client.Queries().ConsumeSingleUseLink(ctx, internal.ConsumeSingleUseLinkParams{Shortcode: input.String(), ConsumedAt: time.Now()})
+	err := repository.client.Queries().ConsumeSingleUseLink(ctx, internal.ConsumeSingleUseLinkParams{Shortcode: input.String(), ConsumedAt: repository.clock.Now()})
 
 	var exception *types.ConditionalCheckFailedException
 	if errors.As(err, &exception) {

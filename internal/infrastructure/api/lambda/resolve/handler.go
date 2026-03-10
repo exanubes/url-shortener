@@ -18,11 +18,13 @@ type Response struct {
 }
 type ResolveUrlHandler struct {
 	usecase resolveurl.UseCase
+	clock   domain.Clock
 }
 
-func NewHandler(usecase resolveurl.UseCase) *ResolveUrlHandler {
+func NewHandler(usecase resolveurl.UseCase, clock domain.Clock) *ResolveUrlHandler {
 	return &ResolveUrlHandler{
 		usecase: usecase,
+		clock:   clock,
 	}
 }
 
@@ -58,7 +60,7 @@ func (handler ResolveUrlHandler) Handle(ctx context.Context, req events.APIGatew
 	if output.Status.Consumed || output.Status.ExpiresAt.IsZero() {
 		cache_control = "no-store"
 	} else {
-		now := time.Now()
+		now := handler.clock.Now()
 		duration := output.Status.ExpiresAt.Sub(now)
 		if duration <= 0 {
 			cache_control = "no-store"

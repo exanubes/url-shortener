@@ -10,12 +10,14 @@ import (
 type Repository struct {
 	links  map[string]domain.LinkState
 	visits map[string][]analytics
+	clock  domain.Clock
 }
 
-func NewInmemoryRepository() *Repository {
+func NewInmemoryRepository(clock domain.Clock) *Repository {
 	return &Repository{
 		links:  make(map[string]domain.LinkState),
 		visits: make(map[string][]analytics),
+		clock:  clock,
 	}
 }
 
@@ -58,7 +60,7 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 	}
 
 	if link_state.ConsumedAt.IsZero() {
-		link_state.ConsumedAt = time.Now()
+		link_state.ConsumedAt = repository.clock.Now()
 		repository.links[input.String()] = link_state
 		return nil
 	}
