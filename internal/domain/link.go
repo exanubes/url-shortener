@@ -110,8 +110,12 @@ func (link *Link) SingleUse() bool {
 	return false
 }
 
-func (link *Link) Consume(now time.Time) {
-	link.consumed_at = now
+func (link *Link) Consume(now time.Time) error {
+	if link.consumed_at.IsZero() {
+		link.consumed_at = now
+	}
+
+	return ErrLinkConsumed
 }
 
 func (link *Link) policy() (ExpirationPolicy, error) {

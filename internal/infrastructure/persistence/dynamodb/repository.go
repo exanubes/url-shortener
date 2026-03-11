@@ -92,7 +92,7 @@ func (repository *Repository) Consume(ctx context.Context, input domain.ShortCod
 
 	var exception *types.ConditionalCheckFailedException
 	if errors.As(err, &exception) {
-		return domain.ErrShortCodeCollision
+		return domain.ErrLinkConsumed
 	}
 
 	return err

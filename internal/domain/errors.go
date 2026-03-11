@@ -19,4 +19,5 @@ var (
 	ErrUndefinedExpirationPolicy = errors.New("Undefined expiration policy")
 	ErrInvalidPolicySpecParams   = errors.New("Invalid policy spec params")
 	ErrUnsupportedPolicyKind     = errors.New("Unsupported policy kind")
+	ErrLinkConsumed              = errors.New("Link already consumed")
 )
