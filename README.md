@@ -143,8 +143,8 @@ will run into the birthday problem the same way - as it is a reversible algorith
 This approach results in a unique, non-sequential short code that's 11 characters long due to relying on a 64-bit snowflake id.
 
 > I've also considered shortening the timestamp to be a UNIX epoch in seconds to try and fit in the $62^7$ space which is
-42bits. An epoch is 31bits, that leaves ten for sequence and machine id which is very little, even if all 10 bits went to
-sequence that's a maximum of 1024 requests per second which is far below the ~1200rps requirement.
+42bits. An epoch is 31bits, which leaves ten for sequence and machine id which is very little. Even if all 10 bits went to
+sequence that's a maximum of 1024 requests per second which is far below the ~1200rps requirement and normally you'd want at least a 2x breathing room.
 
 #### Handling collisions
 
@@ -157,11 +157,37 @@ if it occurs.
 
 ### Resolve URL
 
-TODO: Description
+When user visits a short link, it should redirect to the long url after verifying expiration policies. To do this, I
+had to rehydrate the Link Aggregate with its policies to make sure the link can be used.
 
-Challenge: handling one-time links in a distributed system reliably
+#### Resolving one-time links exactly once
 
-Challenge: introducing caching while at the same time having somewhat accurate counts of the visits
+To ensure that a link is resolved exactly once in a distributed environment, I couldn't rely on application code. Similar
+to validating short code uniqueness with a database, here I've also opted for ensuring consistency through a database.
+
+To achieve this I've created an Atomic operation in DynamoDB for updating the `consumedAt` property for a link, but only
+if the attribute does not exist for that link using a Condition Expression in DynamoDB. If the condition fails, DynamoDB
+returns an error which is then translated to a domain error. So, even if two users click a one time link at the same time,
+only one of them will be redirected.
+
+> Implementing similar behaviour in an SQL database could be achieved by returning the number of updated rows from an 
+atomic UPDATE query. If it's zero, it means it was already consumed and should return an error response 410 Gone.
+
+#### Caching
+
+In such a read heavy system, caching is a must, but it's not very obvious how to do it while at the same time maintaining
+reliable telemetry data e.g., how many times a link was visited, geolocating visits by IP etc. Using a in-memory cache,
+especially when using DynamoDB, seemed like more of the same. Not really helpful, and it doesn't really fix the problem
+of wasting compute on every request to resolve a short url. API Gateway and Lambda are the biggest money wells in this design
+and if application code is responsible for emitting events that's another big chunk of the budget.
+
+I've opted for putting a CDN in front of the API Gateway. This way, cached requests will never even go beyond Cloudfront
+and hit API Gateway or Lambda, but this introduced another problem: how can I count visits? To remedy this, I've used
+Cloudfront's Real Time Logs feature and streamed all the logs to a Kinesis Data Stream.
+
+However, another issue is that we now return Cache headers in the response which might cause the browser to cache the 
+requests and not even send it to the CDN. This can be prevented by using a s-maxage in the Cache-Control header which
+is used only by shared caches like CDNs and overrides the max-age property if both are set.
 
 
 ### Aggregating visits
