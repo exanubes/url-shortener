@@ -192,11 +192,42 @@ is used only by shared caches like CDNs and overrides the max-age property if bo
 
 ### Aggregating visits
 
-TODO: Description
+Doing anything 1 billion times a day will always be a challenge. I've prepared two solutions, one that I used for completing
+the feature in the tiny scale of a development environment using a lambda for processing event batches coming from the 
+Kinesis Data Stream filled with Cloudfront Realtime Logs and saving counts to DynamoDB. Second, more scalable and economically
+viable approach, uses Data Firehose to stream logs from Kinesis to S3.
 
 Challenge: Aggregating 1B visits per day 
 
-## Trade offs
+#### Lambda + DynamoDB
+
+Due to my choice of DynamoDB the additional challenge is that it's not very good at aggregating data just-in-time. DynamoDB 
+has a hard limit of returning a maximum of 1Mb responses, so would require pagination in order to gather all visit metadata
+if it was saved as raw visit events - one per row. This would be wasteful on both fronts - storage and IO. To avoid this
+I elected to save projections for the time granularities that my imaginary dashboard would support - hour/day/month/year. 
+So, on every visit, I would create an atomic operation creating/updating all four buckets.
+
+This solution will do its job, however, under heavy load it could start throttling if there's a popular key that's updated
+very frequently, also known as the hot key problem. If a celebrity with tens or hundreds of millions of subscribers/followers
+shares a link, it will receive a large amount of traffic in a short amount of time right after posting. So if all this
+traffic attempts to update that same key in the database, DynamoDB might start throttling which has to be handled in
+application code. To avoid having this problem, I split each bucket into ten shards and then if I wanted to serve the
+data, I'd need to aggregate the 10 shards. A simple and relatively small aggregation like this can be handled by DynamoDB
+just fine and it won't exceed the 1Mb response limit.
+
+
+#### Firehose + OLAP
+
+DynamoDB is an OLTP system so it wasn't made for handling an aggregation or analysis of large datasets. It's a key value
+store and that's what it excels at. A more realistic solution would be to stream data from Kinesis to an S3 bucket using
+Data Firehose and then use an OLAP database for aggregating the data. Apache Druid or Clickhouse databases would be far 
+more efficient at aggregating data at probably 1/10th of the cost. 
+
+To optimise it further, AWS Data Firehose can be used to save logs in the parquet file format. This will both lower
+the storage and throughput requirements in S3 thus lowering costs. On top of it, OLAP systems are optimized for handling
+parquet and other columnar file types because it aligns with their internal architectures making data injestion and queries
+much faster.
+
 
 ## Cost estimation
 
