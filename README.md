@@ -15,7 +15,7 @@ The expected scale is:
 - The service will run for 10 years and should be able to store all URLs for that time for a total of 365B rows
 - Assuming 200 bytes per row the total storage required would be: `200 bytes * 365B = ~75TB` with some wiggle room
 
-## Features
+## Requirements
 
 - Creating a short url
 - Redirecting from a short url to a long url
@@ -23,7 +23,7 @@ The expected scale is:
     - one time link i.e., expires after one visit
     - maximum age link e.g., expires after 30 days
 - Telemetry 
-    - Counting visits
+- Serverless
 
 
 ## Architecture
@@ -231,46 +231,73 @@ much faster.
 
 ## Cost estimation
 
-TODO: Refine
+A rough breakdown of the most significant cost generating AWS Services
 
-The biggest cost will be:
-- CDN
-    - The bulk of the price of cloudfront is the 1.1B requests per day that cannot be avoided and this comes out to ~$33'000 per month
-    - Additional costs for transfer is another ~$2600
-    - Total: ~$36000
-    - The greatest cost benefit of using a CDN is that we do not send all of the 1.1B requests to origin, saving on additional cost on other parts of the infrastructure
-- API Gateway
-    - Assuming a cache-hit rate of 95%, 50M redirect and 100M new url requests will have to be handled by the API Gateway
-    - This comes out to ~$4100 
-    - If we weren't caching at the CDN it would be ~$30000 + additional lambda and dynamodb charges for handling billions more invocations and
-    database queries a month
+### CDN
 
-- Storage
-    - Scale
-      - Assuming around 200bytes per row * 350B rows over ten years = 70TB of storage required
-      - 100M new urls created each day
-      - 1B redirects, assuming aggressive caching resulting in 50M reads each day
-      - The visits are aggregated into buckets for an additional of 1B Updates in the database for a total of:
-      - 1.1B writes and 50M reads so it's a very write heavy application
+At 1.1B requests per day going through cloudfront, it will be one of the biggest spenders but also savers thanks to
+caching which spares us costs of using other services like API Gateway, Lambda and DynamoDB
+
+- 1.1B requests comes out to around ~$33'000 per month
+- Additional costs for data transfer is another ~$2600
+- Total: ~$36000
+
+### API Gateway
+
+Assuming a cache-hit rate of 95%, 50M redirect and 100M new url requests will have to be handled by the API Gateway
+
+-  Total cost of handling 150M requests is around ~$4100*
+
+> *If we weren't caching at the CDN, the cost would be ~$30000 + additional lambda and dynamodb charges for handling billions more invocations and database queries a month
+
+### Storage
+
+Let's start with some assumptions first:
+ - Assuming around 200bytes per row * 350B rows over ten years = 70TB of storage required.
+ - Writing 100M new urls to the database each day.
+ - 1B redirects, at the aforementioned caching rate would result in 50M reads each day
+ - The visits are aggregated into buckets for an additional of 1B Updates in the database for a total of 1.1B writes and 50M
+reads so it's a very write heavy application from the perspective of Database IO
     
-    - On demand dynamodb
-       - For us-east-1 dynamodb charges $0.25 per GB for a total of ~$18000/month
-       - For 1.1B writes each day we'll have to pay in total $21000/month
-       - 50M reads is under $100/month
-       - Grand total of ~$39000/month for on-demand Dynamodb
+#### On-demand dynamodb
 
-    - provisioned capacity dynamodb
-      -  For provisioned capacity in dynamodb:
-      -  the storage stays the same
-      -  Write capacity for 10K WCU is $15'000 up front for a year and then ~$1000/month
-      -  Read capacity for 300 RCU is ~$90 up front for a year and then ~$7/month
+On-demand pricing as used in development would naturally be the most expensive option:
 
-    - Some other options would be:
-       - RDS that would require an upfront payment for reserved capacity of ~$100000 and then ~$18000/month
-       - Aurora which would require an upfront payment for reserved capacity of ~$57000 and then ~$14000/month
-       - DocumentDB is ~$17000/month but with a single instance of 32 vCPU's and 256GiB of memory, each additional instance is another ~$3000/month
+- For us-east-1 dynamodb charges $0.25 per GB for a total of 70TB * $0.25 = ~$18000/month
+- For 1.1B writes each day we'll have to pay in total $21000/month
+    - One write request unit is $0.000000625
+    - Saving an item uses 1 unit for a total of ~33.5B units per month
+- 50M reads is negligable under $100/month
 
-    - None of these data stores are well suited for this type of data, clickhouse would be a much better choice for analytics at a tenth of the price or even less (OLTP vs. OLAP)
+**The grand total is ~$39000/month for on-demand Dynamodb running at that scale**
 
+#### Provisioned capacity dynamodb
+     
+-  Write capacity for 10K WCU is $15'000 up front for a year and then ~$1000/month
+-  Read capacity for 300 RCU is ~$90 up front for a year and then ~$7/month
+
+> Both DynamoDB examples focus only on raw cost, however, there's a limit of using 3000 Write Capacity Units per DynamoDB
+partition so at this scale it could result in a lot of throttling
+
+**The grand total is $15000K up front and then  ~$18000/month for provisioned Dynamodb running at that scale**
+
+#### Honorable mentions:
+
+- RDS would require an upfront payment for reserved capacity of ~$100000 and then ~$18000/month
+- Aurora would require an upfront payment for reserved capacity of ~$57000 and then ~$14000/month
+- DocumentDB is ~$17000/month but with a single instance of 32 vCPU's and 256GiB of memory, each additional instance is another ~$3000/month
+- Apache Cassandra could be a good candidate for a write heavy application as it handles writes using multiple node
+
+#### OLAP
+
+A big portion of the cost of the storage is writing visits into the database a billion times a day. If that is instead handled
+by an OLAP database, it would be both cheaper to use OLTP databases for transactions and OLAP for analytics, win-win.
+
+Since log data is already archived in S3, there's no need to worry about backups and it becomes quite cheap to run such a solution.
+A managed Clickhouse database would cost around ~$3'000, and a self-hosted solution would be cheaper still.
+
+> All things considered, if analytics data is moved to an OLAP system, the largest cost factor is storage. In this case,
+a traditional SQL database will usually be much cheaper. Could be even less than half the cost of DynamoDB, and avoids
+vendor lock-in.
     
 [AWS Calculator Estimate](https://calculator.aws/#/estimate?id=28d3f1350fe8a88958a982ee9306ddd125ec1458)
